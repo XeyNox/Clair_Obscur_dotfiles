@@ -33,3 +33,6 @@ Task 6: complete (commits 74019ed..cfb0aef, review clean)
   Note : le fix polkit ne se vérifie qu'au prochain démarrage de session (le hook hyprland.start ne rejoue pas sur reload).
 Task 7: complete (commits 2c72e2a..b371d44, review clean — @import à l'octet 0 vérifié par hexdump, 7 rôles croisés avec colors.css)
   waybar sur palette dorée, cyan #33ccff éliminé, police fantôme JetBrainMono->JetBrainsMono corrigée.
+Task 8: complete (commits f2f2fb2..013fc07, review clean — 7 rôles en tirets croisés avec colors.rasi, re-stow fait)
+  Thème rofi maison clair-obscur.rasi + config.rasi en @import. Arc-Dark abandonné. dump-theme exit=0.
+  Validation visuelle (rofi -show drun) différée à l'humain — pas de fenêtre interactive en agent.
