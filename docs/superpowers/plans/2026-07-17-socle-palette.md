@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Faire de `palette.toml` la seule source de vérité des couleurs, réellement branchée sur Hyprland, waybar, rofi, dunst, hyprlock et kitty, et réparer les six bugs silencieux du repo.
+**Goal:** Faire de `palette.toml` la seule source de vérité des couleurs, réellement branchée sur Hyprland, waybar, rofi, dunst, hyprlock et kitty, et réparer les sept bugs silencieux du repo.
 
 **Architecture:** Un `palette.toml` à la racine est lu par `bin/generate_theme.py` (Python stdlib), qui émet un fragment de couleurs par outil dans la syntaxe de cet outil. Les configs restent écrites à la main et importent leur fragment. Dunst est la seule exception : son `dunstrc` est généré en entier depuis un template, parce que dunst ne supporte ni `include` ni variables.
 
@@ -13,13 +13,40 @@
 ## Global Constraints
 
 - **Zéro dépendance externe.** Python stdlib uniquement (`tomllib`, `unittest`). `pytest` n'est pas installé et ne doit pas être ajouté.
-- **Aucun hex de la palette en dur** hors `palette.toml` et fragments générés. Vérifiable : `grep -ri 'c9a961' --exclude-dir=.git --exclude-dir=docs .`
+- **Aucun hex de la palette en dur** hors `palette.toml`, fragments générés, **et tests**. Les tests codent en dur leurs valeurs attendues : un test qui lit son attendu depuis le code testé n'assure rien. Le critère d'acceptation exclut donc `tests/`.
 - **Tout fichier généré porte l'en-tête** `GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml`, avec le préfixe de commentaire de sa syntaxe (`--` en Lua, `/* */` en CSS/rasi, `#` ailleurs).
 - **Les fichiers générés sont versionnés.** Le repo doit rester clonable et utilisable sans lancer le script.
 - **Idempotence.** Deux passages consécutifs du générateur ne produisent aucun diff git.
 - **Seuils de contraste** : rôles d'interface ≥ 4,5:1 ; ANSI ≥ 3:1, `black` exempté (seul exempté).
 - **Wayland uniquement.** Aucun outil X11.
-- **Le générateur ne lit jamais `~`.** Il écrit dans le repo ; c'est stow qui relie au home.
+- **Le générateur ne lit ni n'écrit jamais dans `~`.** Il écrit dans le repo ; c'est stow qui relie au home.
+- **`~/.config/{hypr,waybar,rofi,dunst,kitty}` sont de vrais dossiers**, pas des symlinks (deux paquets partagent `~/.config/hypr`, donc stow ne peut pas les replier). Conséquence : **un fichier ajouté au repo n'apparaît pas tout seul dans `~/.config`**. Toute tâche qui ajoute un fichier à un paquet doit faire `stow -R <paquet>` avant de vérifier en live.
+
+## Contexte découvert en pré-vol
+
+Un **shadow config violet** existe hors du repo — un thème violet/magenta/saumon (`#070307` / `#FFB3A3` / `#2C178A` / `#852E69`) construit à la main le 15 juillet, cohérent sur quatre outils, **plus récent que la palette dorée du repo** (11 juillet).
+
+Décision de l'auteur du repo, prise en pré-vol : **l'or est la direction retenue, le violet était un essai abandonné.** Les cinq fichiers concernés sont sauvegardés puis supprimés en Task 5.
+
+Un seul d'entre eux est réellement actif : `~/.config/dunst/dunstrc`, lu directement par dunst. Les `colors.css` et `colors.rasi` violets sont morts — rien ne les importe.
+
+## Ordre d'exécution
+
+Les polices et la purge stow passent **avant** tout câblage : sans elles, les vérifications live des Tasks 6–10 échouent ou passent sur des replis silencieux.
+
+| # | Tâche | Pourquoi ici |
+|---|---|---|
+| 1 | palette.toml + moteur de contraste | fondation |
+| 2 | Émetteurs des cinq fragments | fondation |
+| 3 | dunstrc depuis template | fondation |
+| 4 | Polices | les Tasks 6–10 vérifient du Cormorant/Cinzel à l'œil |
+| 5 | Purge du shadow config + stow | **sans ça, Task 6 fait planter Hyprland** |
+| 6 | Hyprland + polkit + double bind | |
+| 7 | waybar | |
+| 8 | rofi | |
+| 9 | hyprlock | |
+| 10 | kitty | |
+| 11 | README + recette d'acceptation | |
 
 ---
 
@@ -372,12 +399,14 @@ git commit -m "feat: palette.toml + moteur de contraste vérifiable"
   - `emit_hyprlang(palette: dict) -> str`
   - `emit_kitty(palette: dict) -> str`
   - `header(prefixe: str, suffixe: str = "") -> str`
+  - `_AVERTISSEMENT: str` — le texte d'avertissement nu, sans préfixe de commentaire
+  - `CIBLES: tuple[tuple[str, callable], ...]` — (chemin relatif, émetteur)
   - `write_all(palette: dict) -> list[Path]` — écrit les fragments, retourne les chemins écrits.
 
 Format des couleurs par outil, à respecter exactement :
 - Lua → `"rgb(c9a961)"` (Hyprland veut `rgb(...)`, pas `#...`)
 - CSS → `@define-color accent_gold #c9a961;`
-- rasi → `accent-gold: #c9a961;` dans un bloc `* { }` (rasi n'accepte pas l'underscore en début de propriété ; on normalise en tirets)
+- rasi → `accent-gold: #c9a961;` dans un bloc `* { }` (on normalise les underscores en tirets)
 - hyprlang → `$accent_gold = rgb(c9a961)`
 - kitty → `color3 #c9a961` + `foreground`/`background`
 
@@ -433,16 +462,13 @@ class TestEmetteurs(unittest.TestCase):
 class TestIdempotence(unittest.TestCase):
     def test_deux_passages_donnent_le_meme_contenu(self):
         p = generate_theme.load_palette(REPO / "palette.toml")
-        premier = {e.__name__: e(p) for e in (
+        emetteurs = (
             generate_theme.emit_lua, generate_theme.emit_css,
             generate_theme.emit_rasi, generate_theme.emit_hyprlang,
             generate_theme.emit_kitty,
-        )}
-        second = {e.__name__: e(p) for e in (
-            generate_theme.emit_lua, generate_theme.emit_css,
-            generate_theme.emit_rasi, generate_theme.emit_hyprlang,
-            generate_theme.emit_kitty,
-        )}
+        )
+        premier = {e.__name__: e(p) for e in emetteurs}
+        second = {e.__name__: e(p) for e in emetteurs}
         self.assertEqual(premier, second)
 ```
 
@@ -558,9 +584,7 @@ Puis brancher dans `main()`, en remplaçant le `return 0` final :
     if echecs:
         for e in echecs:
             print(f"ÉCHEC {e}", file=sys.stderr)
-        print(
-            "génération annulée : corriger palette.toml", file=sys.stderr
-        )
+        print("génération annulée : corriger palette.toml", file=sys.stderr)
         return 1
 
     for chemin in write_all(palette):
@@ -578,23 +602,29 @@ python3 -m unittest discover -s tests -v
 
 Attendu : `OK` — 18 tests.
 
-- [ ] **Step 5: Générer et vérifier l'idempotence sur disque**
+- [ ] **Step 5: Générer les fragments**
 
 ```bash
 python3 bin/generate_theme.py
-git add -A && git commit -q -m "wip: premiers fragments"
-python3 bin/generate_theme.py
-git diff --exit-code; echo "idempotent si exit=0 : $?"
 ```
 
-Attendu : `exit=0`, aucun diff.
+Attendu : cinq lignes `écrit …`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add -A
-git commit --amend -m "feat: émetteurs des cinq fragments de couleurs"
+git commit -m "feat: émetteurs des cinq fragments de couleurs"
 ```
+
+- [ ] **Step 7: Vérifier l'idempotence sur disque**
+
+```bash
+python3 bin/generate_theme.py
+git diff --exit-code; echo "idempotent si exit=0 : $?"
+```
+
+Attendu : `exit=0`, aucun diff. Un diff ici signifie que le générateur n'est pas déterministe — corriger avant de continuer.
 
 ---
 
@@ -607,7 +637,7 @@ git commit --amend -m "feat: émetteurs des cinq fragments de couleurs"
 - Create (généré) : `dunst/.config/dunst/dunstrc`
 
 **Interfaces:**
-- Consumes: `load_palette` (Task 1) ; `_AVERTISSEMENT` et `CIBLES` (Task 2). N'utilise **pas** `header()` : le template porte son propre `{{HEADER}}` avec le `#` déjà en place.
+- Consumes: `load_palette` (Task 1) ; `_AVERTISSEMENT` et `CIBLES` (Task 2). N'utilise **pas** `header()` : le template porte son propre `{{HEADER}}`, avec le `#` déjà en place.
 - Produces: `emit_dunstrc(palette: dict) -> str` — lit `templates/dunstrc.in`, substitue `{{HEADER}}` puis chaque `{{role}}`.
 
 Dunst ne supporte ni `include` ni variables : son `dunstrc` est généré **en entier**. C'est la seule exception du repo.
@@ -748,7 +778,7 @@ Attendu : `AttributeError: module 'generate_theme' has no attribute 'emit_dunstr
 
 - [ ] **Step 4: Implémenter `emit_dunstrc`**
 
-Ajouter à `bin/generate_theme.py`, après `emit_kitty` :
+Ajouter à `bin/generate_theme.py`, après `emit_kitty` et **avant** `CIBLES` :
 
 ```python
 def emit_dunstrc(palette: dict) -> str:
@@ -757,10 +787,10 @@ def emit_dunstrc(palette: dict) -> str:
     sortie = gabarit.replace("{{HEADER}}", _AVERTISSEMENT)
     for nom, val in palette["roles"].items():
         sortie = sortie.replace(f"{{{{{nom}}}}}", val)
-    reste = [m for m in ("{{", "}}") if m in sortie]
-    if reste:
+    if "{{" in sortie or "}}" in sortie:
         raise ValueError(
-            f"placeholder non substitué dans templates/dunstrc.in : {sortie!r}"[:200]
+            "placeholder non substitué dans templates/dunstrc.in — "
+            "un rôle du template n'existe pas dans palette.toml"
         )
     return sortie
 ```
@@ -777,8 +807,6 @@ CIBLES = (
     ("dunst/.config/dunst/dunstrc", emit_dunstrc),
 )
 ```
-
-`emit_dunstrc` doit être défini **avant** `CIBLES` dans le fichier.
 
 - [ ] **Step 5: Lancer les tests pour vérifier qu'ils passent**
 
@@ -797,6 +825,8 @@ dunst --config dunst/.config/dunst/dunstrc --print 2>&1 | head -20; echo "exit=$
 
 Attendu : dunst imprime sa config sans erreur de parsing. Toute ligne `CRITICAL` ou `WARNING: Unknown setting` est un échec à corriger.
 
+Note : ce contrôle utilise `--config` avec un chemin explicite, donc il ne dépend pas de stow (réparé en Task 5).
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -806,13 +836,239 @@ git commit -m "feat: dunstrc généré depuis template (dunst n'a ni include ni 
 
 ---
 
-### Task 4: Brancher Hyprland + réparer polkit et le double bind
+### Task 4: Script d'installation des polices
 
 **Files:**
-- Modify: `hypr/.config/hypr/hyprland.lua` (lignes 42, 57, 279, 299, et le bloc `general.col`)
+- Create: `bin/install-fonts.sh`
 
 **Interfaces:**
-- Consumes: `hypr/.config/hypr/colors.lua` (Task 2) — table Lua, clés = noms de rôles, valeurs = `"rgb(xxxxxx)"`, plus une sous-table `ansi`.
+- Consumes: rien
+- Produces: `Cormorant Garamond` et `Cinzel` résolvables par `fc-match`. Les Tasks 6–10 les référencent et vérifient leur rendu à l'œil.
+
+Cette tâche passe **avant** les câblages : sans les polices, les vérifications visuelles des Tasks 6–10 passeraient sur un repli fontconfig silencieux, exactement le bug `JetBrainMono` qu'on répare par ailleurs.
+
+Les polices ne sont pas versionnées (binaires ; licence OFL redistribuable mais encombrante) — d'où ce script. Pas d'AUR, pas de compilation.
+
+- [ ] **Step 1: Écrire le script**
+
+```bash
+#!/usr/bin/env bash
+# Installe les polices d'affichage Clair Obscur depuis Google Fonts.
+# Idempotent : ne retélécharge pas ce qui est déjà résolvable.
+set -euo pipefail
+
+DEST="${HOME}/.local/share/fonts"
+TMP="$(mktemp -d)"
+trap 'rm -rf "${TMP}"' EXIT
+
+BASE="https://github.com/google/fonts/raw/main/ofl"
+
+# famille -> chemin distant relatif à BASE
+declare -A CHEMINS=(
+    ["Cormorant Garamond"]="cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf"
+    ["Cinzel"]="cinzel/Cinzel%5Bwght%5D.ttf"
+)
+
+# famille -> nom de fichier local
+declare -A FICHIERS=(
+    ["Cormorant Garamond"]="CormorantGaramond.ttf"
+    ["Cinzel"]="Cinzel.ttf"
+)
+
+mkdir -p "${DEST}"
+installe=0
+
+for famille in "${!CHEMINS[@]}"; do
+    if fc-list : family | grep -qiF "${famille}"; then
+        echo "déjà présente : ${famille}"
+        continue
+    fi
+    url="${BASE}/${CHEMINS[$famille]}"
+    cible="${TMP}/${FICHIERS[$famille]}"
+    echo "téléchargement : ${famille}"
+    if ! curl -fsSL "${url}" -o "${cible}"; then
+        echo "ÉCHEC du téléchargement de ${famille} depuis ${url}" >&2
+        exit 1
+    fi
+    # Un dépôt qui répond du HTML au lieu d'une police est une panne silencieuse.
+    if ! file "${cible}" | grep -qiE 'truetype|opentype|font'; then
+        echo "ÉCHEC : ${cible} n'est pas une police (dépôt déplacé ?)" >&2
+        exit 1
+    fi
+    mv "${cible}" "${DEST}/"
+    installe=1
+done
+
+if [[ "${installe}" -eq 1 ]]; then
+    echo "reconstruction du cache fontconfig…"
+    fc-cache -f >/dev/null
+fi
+
+echec=0
+for famille in "${!CHEMINS[@]}"; do
+    resolu="$(fc-match "${famille}")"
+    attendu="$(echo "${famille}" | tr -d ' ')"
+    if echo "${resolu}" | grep -qiF "${attendu}"; then
+        echo "OK  ${famille} → ${resolu}"
+    else
+        echo "ÉCHEC ${famille} ne se résout pas : ${resolu}" >&2
+        echec=1
+    fi
+done
+exit "${echec}"
+```
+
+- [ ] **Step 2: Rendre exécutable et lancer**
+
+```bash
+chmod +x bin/install-fonts.sh
+./bin/install-fonts.sh; echo "exit=$?"
+```
+
+Attendu : les deux polices se téléchargent, `fc-cache` tourne, deux lignes `OK`, `exit=0`.
+
+Si le téléchargement échoue (URL Google Fonts déplacée), **s'arrêter et le signaler** — ne pas contourner en installant une police approchante.
+
+- [ ] **Step 3: Vérifier l'idempotence**
+
+```bash
+./bin/install-fonts.sh; echo "exit=$?"
+```
+
+Attendu : `déjà présente : …` deux fois, aucun téléchargement, `exit=0`.
+
+- [ ] **Step 4: Vérifier la résolution des trois polices**
+
+```bash
+fc-match "Cormorant Garamond"
+fc-match "Cinzel"
+fc-match "JetBrainsMono Nerd Font"
+```
+
+Attendu : chaque commande résout vers la bonne famille, et **pas** vers un repli type `DejaVuSans.ttf` ou `NotoSansMono-Regular.ttf`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add bin/install-fonts.sh
+git commit -m "feat: script d'installation des polices Cormorant Garamond et Cinzel"
+```
+
+---
+
+### Task 5: Purger le shadow config + réparer la dérive stow
+
+**Files:**
+- Delete: `colors/colors.conf` et le dossier `colors/` (vestigial)
+- Delete (hors repo) : cinq vrais fichiers de `~/.config/` — voir ci-dessous
+
+**Interfaces:**
+- Consumes: les six fragments générés (Tasks 2–3) — ils doivent exister avant le stow.
+- Produces: `~/.config/**` entièrement en symlinks vers le repo. **Les Tasks 6–10 en dépendent** : sans ça, leurs vérifications live lisent les anciens fichiers.
+
+**Cette tâche est bloquante pour tout le câblage.** `hyprland.lua` fait `dofile("~/.config/hypr/colors.lua")` : tant que ce chemin pointe sur le vieux fichier violet (qui n'a que `active_border` / `inactive_border`), `colors.accent_gold` vaut `nil` et Hyprland refuse la config.
+
+Cinq vrais fichiers à supprimer :
+
+| Fichier | Contenu | Perte ? |
+|---|---|---|
+| `~/.config/hypr/hyprpaper.conf` | identique au repo | aucune (vérifié par `diff`) |
+| `~/.config/hypr/colors.lua` | thème violet abandonné | sauvegardé |
+| `~/.config/waybar/colors.css` | thème violet abandonné | sauvegardé |
+| `~/.config/rofi/colors.rasi` | thème violet abandonné | sauvegardé |
+| `~/.config/dunst/dunstrc` | thème violet abandonné — **seul réellement actif** | sauvegardé |
+
+Le dossier `colors/` n'a jamais été stowable (pas de sous-dossier `.config/`) — c'était un vestige. Son contenu vit dans `palette.toml`.
+
+- [ ] **Step 1: Sauvegarder les cinq fichiers avant toute suppression**
+
+```bash
+mkdir -p /tmp/dotfiles-backup
+for f in ~/.config/hypr/colors.lua ~/.config/hypr/hyprpaper.conf \
+         ~/.config/waybar/colors.css ~/.config/rofi/colors.rasi \
+         ~/.config/dunst/dunstrc; do
+    [ -f "$f" ] && [ ! -L "$f" ] && cp -v "$f" "/tmp/dotfiles-backup/$(echo "${f#$HOME/.config/}" | tr '/' '-')"
+done
+ls -l /tmp/dotfiles-backup/
+```
+
+Attendu : cinq fichiers sauvegardés. **Si un fichier manque, s'arrêter et le signaler** — l'état du système a divergé de l'analyse.
+
+- [ ] **Step 2: Confirmer que hyprpaper.conf n'a rien d'unique à perdre**
+
+```bash
+diff ~/.config/hypr/hyprpaper.conf hypr/.config/hypr/hyprpaper.conf && echo "IDENTIQUES — suppression sans perte"
+```
+
+Attendu : `IDENTIQUES`. **Si le diff n'est pas vide, s'arrêter** et reporter la différence — le fichier live a divergé depuis l'analyse.
+
+- [ ] **Step 3: Supprimer les cinq vrais fichiers et le dossier vestigial**
+
+```bash
+rm -v ~/.config/hypr/colors.lua ~/.config/hypr/hyprpaper.conf \
+      ~/.config/waybar/colors.css ~/.config/rofi/colors.rasi \
+      ~/.config/dunst/dunstrc
+git rm -r --quiet colors/
+```
+
+- [ ] **Step 4: Vérifier stow à blanc avant d'agir**
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+for p in hypr waybar rofi dunst hyprlock kitty; do
+    echo "--- $p"
+    stow -n -v -R -t "$HOME" "$p" 2>&1
+done
+```
+
+Attendu : aucun `CONFLICT`. Un conflit signale un vrai fichier restant — le traiter avant de continuer, ne pas forcer avec `--adopt`.
+
+- [ ] **Step 5: Stow pour de bon**
+
+```bash
+stow -R -t "$HOME" hypr waybar rofi dunst hyprlock kitty
+```
+
+- [ ] **Step 6: Vérifier que tout est symlink et pointe vers le repo**
+
+```bash
+for f in ~/.config/hypr/colors.lua ~/.config/hypr/hyprpaper.conf \
+         ~/.config/hypr/hyprland.lua ~/.config/waybar/colors.css \
+         ~/.config/rofi/colors.rasi ~/.config/dunst/dunstrc \
+         ~/.config/hyprlock.conf ~/.config/kitty/colors.conf; do
+    if [ -L "$f" ] && [ -e "$f" ]; then echo "OK      $f"
+    elif [ -L "$f" ]; then echo "ÉCHEC   symlink cassé : $f -> $(readlink "$f")"
+    else echo "ÉCHEC   pas un symlink : $f"; fi
+done
+```
+
+Attendu : huit `OK`. Note : `~/.config/hyprlock.conf` n'existe pas — hyprlock est stowé vers `~/.config/hypr/hyprlock.conf`. Corriger la liste si le chemin diffère, mais **ne pas ignorer un ÉCHEC**.
+
+- [ ] **Step 7: Vérifier que le colors.lua livré est bien le doré**
+
+```bash
+grep -c 'accent_gold' ~/.config/hypr/colors.lua
+grep -c '2C178A' ~/.config/hypr/colors.lua || echo "OK plus de violet"
+```
+
+Attendu : `1` ou plus pour `accent_gold`, et `OK plus de violet`.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add -A
+git commit -m "fix: purger le shadow config violet, supprimer colors/ vestigial, réparer la dérive stow"
+```
+
+---
+
+### Task 6: Brancher Hyprland + réparer polkit et le double bind
+
+**Files:**
+- Modify: `hypr/.config/hypr/hyprland.lua` (lignes 42, 57, 299, et le bloc `general.col`)
+
+**Interfaces:**
+- Consumes: `hypr/.config/hypr/colors.lua` (Task 2), stowé vers `~/.config/hypr/colors.lua` (Task 5) — table Lua, clés = noms de rôles, valeurs = `"rgb(xxxxxx)"`, plus une sous-table `ansi`.
 - Produces: rien pour les tâches suivantes.
 
 Trois bugs réparés ici, tous vérifiés :
@@ -829,9 +1085,11 @@ grep -n 'active_border' hypr/.config/hypr/hyprland.lua
 
 Attendu : la ligne 42 charge `colors`, la 57 contient `authentification`, les 279 et 299 sont toutes deux `SHIFT + S`, et `active_border` vaut encore le cyan/vert du template (`33ccffee` / `00ff99ee`).
 
-- [ ] **Step 2: Réparer le chemin de la palette (ligne 42)**
+Les numéros de ligne sont indicatifs — si le fichier a bougé, se repérer sur le contenu.
 
-Le `dofile` pointe vers `~/.config/hypr/colors.lua`, qui deviendra un symlink vers le fragment généré (Task 10). Le chemin est correct — **ne pas le modifier**.
+- [ ] **Step 2: Ne pas toucher au chemin du `dofile` (ligne 42)**
+
+Le `dofile` pointe vers `~/.config/hypr/colors.lua`, qui est désormais un symlink vers le fragment généré (Task 5). Le chemin est correct — **ne pas le modifier**.
 
 - [ ] **Step 3: Brancher les couleurs sur les bordures**
 
@@ -865,8 +1123,7 @@ hl.bind(mainMod .. " + SHIFT + X", hl.dsp.window.move({ workspace = "special:mag
 - [ ] **Step 6: Vérifier qu'aucun bind n'est déclaré deux fois**
 
 ```bash
-grep -oE '"[^"]*" \.\. " \+ [A-Za-z0-9]+"|mainMod \.\. " \+ [^"]*"' hypr/.config/hypr/hyprland.lua \
-  | sort | uniq -d
+grep -oE 'mainMod \.\. " \+ [^"]*"' hypr/.config/hypr/hyprland.lua | sort | uniq -d
 ```
 
 Attendu : **aucune sortie**. Toute ligne affichée est un bind en double.
@@ -879,6 +1136,8 @@ hyprctl reload && hyprctl getoption general:col.active_border
 
 Attendu : `hyprctl reload` répond `ok`, et `active_border` ne contient plus `33ccff`.
 
+Si Hyprland se plaint d'un `nil`, c'est que Task 5 n'a pas abouti — vérifier `~/.config/hypr/colors.lua`.
+
 - [ ] **Step 8: Commit**
 
 ```bash
@@ -888,13 +1147,13 @@ git commit -m "fix: brancher la palette + réparer l'agent polkit et le double b
 
 ---
 
-### Task 5: Brancher waybar
+### Task 7: Brancher waybar
 
 **Files:**
 - Modify: `waybar/.config/waybar/style.css` (réécriture complète)
 
 **Interfaces:**
-- Consumes: `waybar/.config/waybar/colors.css` (Task 2) — `@define-color <role> #hex;`
+- Consumes: `waybar/.config/waybar/colors.css` (Task 2), stowé (Task 5) — `@define-color <role> #hex;`
 
 waybar utilise gtkmm-3.0 (vérifié via `ldd`), donc du CSS GTK3 : `@import` et `@define-color` sont supportés.
 
@@ -963,20 +1222,29 @@ window#waybar {
 - [ ] **Step 2: Vérifier que waybar démarre sans erreur CSS**
 
 ```bash
-pkill waybar; waybar -l debug 2>&1 | grep -iE 'error|css|warning' | head -10
+pkill waybar; sleep 1
+timeout 5 waybar -l debug 2>&1 | grep -iE 'error|css' | head -10; echo "---fin---"
 ```
 
-Attendu : aucune ligne d'erreur CSS. Une erreur `Failed to import` signalerait que `colors.css` n'est pas à côté de `style.css` — vérifier que Task 2 l'a bien écrit dans `waybar/.config/waybar/`.
+Attendu : aucune ligne d'erreur CSS entre le lancement et `---fin---`. Une erreur `Failed to import` signalerait que `colors.css` n'est pas à côté de `style.css` dans `~/.config/waybar/` — c'est-à-dire que Task 5 n'a pas abouti.
 
-- [ ] **Step 3: Vérifier que la police fantôme a disparu**
+- [ ] **Step 3: Relancer waybar en fond**
 
 ```bash
-grep -c 'JetBrainMono' waybar/.config/waybar/style.css
+waybar >/dev/null 2>&1 &
+sleep 2; pgrep waybar >/dev/null && echo "OK waybar tourne"
 ```
 
-Attendu : `0`.
+- [ ] **Step 4: Vérifier que la police fantôme a disparu**
 
-- [ ] **Step 4: Commit**
+```bash
+grep -c 'JetBrainMono Nerd' waybar/.config/waybar/style.css || echo "OK plus de police fantôme"
+grep -c 'JetBrainsMono Nerd' waybar/.config/waybar/style.css
+```
+
+Attendu : `OK plus de police fantôme` (aucune occurrence sans `s`), puis `1`.
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git add waybar/.config/waybar/style.css
@@ -985,18 +1253,18 @@ git commit -m "feat: waybar sur la palette + fix de la police fantôme JetBrainM
 
 ---
 
-### Task 6: Brancher rofi
+### Task 8: Brancher rofi
 
 **Files:**
 - Modify: `rofi/.config/rofi/config.rasi`
 - Create: `rofi/.config/rofi/clair-obscur.rasi`
 
 **Interfaces:**
-- Consumes: `rofi/.config/rofi/colors.rasi` (Task 2) — bloc `* { }`, noms de rôles **en tirets** (`accent-gold`, pas `accent_gold`).
+- Consumes: `rofi/.config/rofi/colors.rasi` (Task 2), stowé (Task 5) — bloc `* { }`, noms de rôles **en tirets** (`accent-gold`, pas `accent_gold`).
 
 Abandon du thème stock `Arc-Dark`. rofi 2.0 est Wayland natif (vérifié) — aucun XWayland.
 
-Même correction de police fantôme qu'en Task 5.
+`clair-obscur.rasi` est un **nouveau fichier** dans un paquet déjà stowé : `~/.config/rofi` est un vrai dossier, donc il faut `stow -R rofi` pour qu'il apparaisse.
 
 - [ ] **Step 1: Écrire `clair-obscur.rasi`**
 
@@ -1076,20 +1344,27 @@ configuration {
 @import "clair-obscur.rasi"
 ```
 
-`@import` relatif, et non `@theme "~/.config/rofi/…"` : l'expansion du `~` par rofi
-n'est pas garantie, alors qu'un `@import` se résout relativement au fichier qui
-l'importe. C'est aussi ce qui rend le thème correct quel que soit l'endroit où
-stow le relie.
+`@import` relatif, et non `@theme "~/.config/rofi/…"` : l'expansion du `~` par rofi n'est pas garantie, alors qu'un `@import` se résout relativement au fichier qui l'importe. C'est aussi ce qui rend le thème correct quel que soit l'endroit où stow le relie.
 
-- [ ] **Step 3: Vérifier que rofi parse le thème**
+- [ ] **Step 3: Re-stow pour que le nouveau fichier apparaisse**
 
 ```bash
-rofi -dump-theme 2>&1 | head -5; echo "exit=$?"
+stow -R -t "$HOME" rofi
+ls -l ~/.config/rofi/clair-obscur.rasi
+```
+
+Attendu : un symlink vers le repo.
+
+- [ ] **Step 4: Vérifier que rofi parse le thème**
+
+```bash
+rofi -dump-theme >/dev/null 2>&1; echo "exit=$?"
+rofi -dump-theme 2>&1 | grep -iE 'c9a961|accent' | head -3
 ```
 
 Attendu : `exit=0`, et le dump montre les couleurs de la palette. Une erreur de parsing s'affiche en clair avec le numéro de ligne.
 
-- [ ] **Step 4: Vérifier à l'œil**
+- [ ] **Step 5: Vérifier à l'œil**
 
 ```bash
 rofi -show drun
@@ -1097,15 +1372,15 @@ rofi -show drun
 
 Attendu : fond noir chaud, bordure or éteint, entrée sélectionnée en or sur `bg_elevated`, prompt en Cormorant. Fermer avec Échap.
 
-- [ ] **Step 5: Vérifier que la police fantôme a disparu**
+- [ ] **Step 6: Vérifier que la police fantôme a disparu**
 
 ```bash
-grep -c 'JetBrainMono' rofi/.config/rofi/config.rasi
+grep -c 'JetBrainMono Nerd' rofi/.config/rofi/config.rasi || echo "OK plus de police fantôme"
 ```
 
-Attendu : `0`.
+Attendu : `OK plus de police fantôme`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add rofi/.config/rofi/
@@ -1114,13 +1389,13 @@ git commit -m "feat: thème rofi Clair Obscur, abandon d'Arc-Dark"
 
 ---
 
-### Task 7: Brancher hyprlock + réparer le chemin du wallpaper
+### Task 9: Brancher hyprlock + réparer le chemin du wallpaper
 
 **Files:**
 - Modify: `hyprlock/.config/hypr/hyprlock.conf`
 
 **Interfaces:**
-- Consumes: `hyprlock/.config/hypr/colors.conf` (Task 2) — `$<role> = rgb(xxxxxx)`
+- Consumes: `hyprlock/.config/hypr/colors.conf` (Task 2), stowé (Task 5) — `$<role> = rgb(xxxxxx)`
 
 Bug réparé : `path = ~/Pictures?wallpaper.jpg` — le `?` est une typo, et le fichier s'appelle `wallpaper_clair_obscur.jpg` (vérifié présent).
 
@@ -1186,9 +1461,21 @@ label {
 ls -l ~/Pictures/wallpaper_clair_obscur.jpg
 ```
 
-Attendu : le fichier existe. S'il est absent, hyprlock affichera un fond noir sans erreur — d'où ce contrôle explicite.
+Attendu : le fichier existe. S'il est absent, hyprlock affiche un fond noir **sans erreur** — d'où ce contrôle explicite.
 
-- [ ] **Step 3: Vérifier hyprlock**
+- [ ] **Step 3: Re-stow et vérifier que le fragment est lisible**
+
+```bash
+stow -R -t "$HOME" hyprlock
+ls -l ~/.config/hypr/hyprlock.conf ~/.config/hypr/colors.conf
+grep -c 'accent_gold' ~/.config/hypr/colors.conf
+```
+
+Attendu : deux symlinks, et au moins une occurrence de `accent_gold`.
+
+- [ ] **Step 4: Vérifier hyprlock**
+
+⚠️ **Ne pas lancer cette étape sans savoir déverrouiller la session.** Si l'implémenteur est un agent sans accès au mot de passe, **sauter cette étape** et la signaler comme à vérifier par un humain.
 
 ```bash
 hyprlock --immediate
@@ -1196,9 +1483,7 @@ hyprlock --immediate
 
 Attendu : l'écran se verrouille, le wallpaper est flouté, l'horloge est en Cinzel, le champ a un contour or éteint. Déverrouiller avec le mot de passe.
 
-⚠️ Ne pas lancer cette étape sans savoir déverrouiller la session.
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add hyprlock/.config/hypr/hyprlock.conf
@@ -1207,15 +1492,15 @@ git commit -m "feat: hyprlock sur la palette + fix du chemin wallpaper cassé"
 
 ---
 
-### Task 8: Créer le paquet stow kitty
+### Task 10: Créer le paquet stow kitty
 
 **Files:**
 - Create: `kitty/.config/kitty/kitty.conf`
 
 **Interfaces:**
-- Consumes: `kitty/.config/kitty/colors.conf` (Task 2) — `background`, `foreground`, `cursor`, `color0`…`color15`
+- Consumes: `kitty/.config/kitty/colors.conf` (Task 2), stowé (Task 5) — `background`, `foreground`, `cursor`, `color0`…`color15`
 
-kitty n'a **aucune config** aujourd'hui (`~/.config/kitty/` est vide). Terrain vierge, nouveau paquet stow.
+kitty n'avait **aucune config** (`~/.config/kitty/` était un dossier vide). `kitty.conf` est un nouveau fichier : `stow -R kitty` est nécessaire.
 
 - [ ] **Step 1: Écrire `kitty.conf`**
 
@@ -1244,26 +1529,36 @@ background_opacity 0.92
 
 `background_opacity 0.92` laisse le blur d'Hyprland (déjà activé) travailler derrière le terminal.
 
-- [ ] **Step 2: Vérifier que kitty charge la config sans erreur**
+- [ ] **Step 2: Re-stow**
 
 ```bash
-kitty --config kitty/.config/kitty/kitty.conf --debug-config 2>&1 | head -20
+stow -R -t "$HOME" kitty
+ls -l ~/.config/kitty/
 ```
 
-Attendu : aucune ligne `Bad value` ou `Unknown option`. La sortie doit montrer `color3` à `#c9a961`.
+Attendu : `kitty.conf` et `colors.conf`, tous deux symlinks vers le repo.
 
-- [ ] **Step 3: Vérifier à l'œil que les ANSI sont discriminables**
+- [ ] **Step 3: Vérifier que kitty charge la config sans erreur**
 
 ```bash
-kitty --config kitty/.config/kitty/kitty.conf sh -c '
+kitty --config ~/.config/kitty/kitty.conf --debug-config 2>&1 | grep -iE 'bad value|unknown option|error' | head; echo "---fin---"
+kitty --config ~/.config/kitty/kitty.conf --debug-config 2>&1 | grep -E '^color3 |^background ' | head -3
+```
+
+Attendu : rien avant `---fin---`, puis `color3 #c9a961` et `background #0d0b0a`.
+
+- [ ] **Step 4: Vérifier à l'œil que les ANSI sont discriminables**
+
+```bash
+kitty --config ~/.config/kitty/kitty.conf sh -c '
 for i in 0 1 2 3 4 5 6 7; do printf "\033[3${i}m██ normal $i \033[0m"; done; echo
 for i in 0 1 2 3 4 5 6 7; do printf "\033[9${i}m██ bright $i \033[0m"; done; echo
-read -p "Rouge et vert sont-ils distinguables ? Entrée pour fermer."'
+read -p "Rouge et vert distinguables ? Entrée pour fermer."'
 ```
 
 Attendu : les 16 teintes sont visibles et distinctes. Le rouge (garance) doit être visiblement plus sombre que le vert (vert-de-gris) — cet écart de luminosité est délibéré, il garde les diffs lisibles en deutéranopie.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add kitty/
@@ -1272,190 +1567,18 @@ git commit -m "feat: paquet kitty avec les ANSI pigments d'époque"
 
 ---
 
-### Task 9: Script d'installation des polices
+### Task 11: README + recette d'acceptation
 
 **Files:**
-- Create: `bin/install-fonts.sh`
-
-**Interfaces:**
-- Consumes: rien
-- Produces: `Cormorant Garamond` et `Cinzel` résolvables par `fc-match`. Les Tasks 5–8 les référencent déjà.
-
-Les polices ne sont pas versionnées (binaires ; licence OFL redistribuable mais encombrante) — d'où ce script. Pas d'AUR, pas de compilation.
-
-- [ ] **Step 1: Écrire le script**
-
-```bash
-#!/usr/bin/env bash
-# Installe les polices d'affichage Clair Obscur depuis Google Fonts.
-# Idempotent : ne retélécharge pas ce qui est déjà résolvable.
-set -euo pipefail
-
-DEST="${HOME}/.local/share/fonts"
-TMP="$(mktemp -d)"
-trap 'rm -rf "${TMP}"' EXIT
-
-declare -A POLICES=(
-    ["Cormorant Garamond"]="https://github.com/google/fonts/raw/main/ofl/cormorantgaramond"
-    ["Cinzel"]="https://github.com/google/fonts/raw/main/ofl/cinzel"
-)
-
-declare -A FICHIERS=(
-    ["Cormorant Garamond"]="CormorantGaramond%5Bwght%5D.ttf"
-    ["Cinzel"]="Cinzel%5Bwght%5D.ttf"
-)
-
-mkdir -p "${DEST}"
-installe=0
-
-for famille in "${!POLICES[@]}"; do
-    if fc-list : family | grep -qiF "${famille}"; then
-        echo "déjà présente : ${famille}"
-        continue
-    fi
-    url="${POLICES[$famille]}/${FICHIERS[$famille]}"
-    cible="${TMP}/$(basename "${FICHIERS[$famille]}" | sed 's/%5B.*/.ttf/')"
-    echo "téléchargement : ${famille}"
-    if ! curl -fsSL "${url}" -o "${cible}"; then
-        echo "ÉCHEC du téléchargement de ${famille} depuis ${url}" >&2
-        exit 1
-    fi
-    # Un dépôt qui répond du HTML au lieu d'une police est une panne silencieuse.
-    if ! file "${cible}" | grep -qiE 'truetype|opentype|font'; then
-        echo "ÉCHEC : ${cible} n'est pas une police (dépôt déplacé ?)" >&2
-        exit 1
-    fi
-    mv "${cible}" "${DEST}/"
-    installe=1
-done
-
-if [[ "${installe}" -eq 1 ]]; then
-    echo "reconstruction du cache fontconfig…"
-    fc-cache -f >/dev/null
-fi
-
-for famille in "${!POLICES[@]}"; do
-    if fc-match "${famille}" | grep -qiF "$(echo "${famille}" | tr -d ' ')"; then
-        echo "OK  ${famille} → $(fc-match "${famille}")"
-    else
-        echo "ÉCHEC ${famille} ne se résout pas : $(fc-match "${famille}")" >&2
-        exit 1
-    fi
-done
-
-echo "polices installées."
-```
-
-- [ ] **Step 2: Rendre exécutable et lancer**
-
-```bash
-chmod +x bin/install-fonts.sh
-./bin/install-fonts.sh
-```
-
-Attendu : les deux polices se téléchargent, `fc-cache` tourne, et les deux lignes `OK` s'affichent.
-
-- [ ] **Step 3: Vérifier l'idempotence**
-
-```bash
-./bin/install-fonts.sh
-```
-
-Attendu : `déjà présente : …` deux fois, pas de téléchargement, sortie en 0.
-
-- [ ] **Step 4: Vérifier la résolution**
-
-```bash
-fc-match "Cormorant Garamond"
-fc-match "Cinzel"
-fc-match "JetBrainsMono Nerd Font"
-```
-
-Attendu : chaque commande résout vers la bonne famille, et **pas** vers un repli type `DejaVuSans.ttf`.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add bin/install-fonts.sh
-git commit -m "feat: script d'installation des polices Cormorant Garamond et Cinzel"
-```
-
----
-
-### Task 10: Réparer la dérive stow + recette d'acceptation
-
-**Files:**
-- Delete: `colors/colors.conf`, `colors/` (vestigial)
-- Delete (hors repo) : `~/.config/hypr/colors.lua`, `~/.config/hypr/hyprpaper.conf` (vrais fichiers → deviennent des symlinks)
 - Create: `README.md`
 
 **Interfaces:**
 - Consumes: tout ce qui précède.
 - Produces: l'état final vérifiable.
 
-Le dossier `colors/` n'a jamais été stowable (pas de sous-dossier `.config/`) — c'était un vestige. Son contenu vit dans `palette.toml`.
+- [ ] **Step 1: Écrire le README**
 
-`~/.config/hypr/hyprpaper.conf` live et repo sont **identiques** (vérifié par `diff`) → suppression sans perte.
-`~/.config/hypr/colors.lua` live contient une palette violette (`2C178A`) contredisant la palette dorée → remplacé par le fragment généré.
-
-- [ ] **Step 1: Sauvegarder les fichiers non symlinkés avant de les supprimer**
-
-```bash
-mkdir -p /tmp/dotfiles-backup
-cp ~/.config/hypr/colors.lua /tmp/dotfiles-backup/ 2>/dev/null || true
-cp ~/.config/hypr/hyprpaper.conf /tmp/dotfiles-backup/ 2>/dev/null || true
-ls -l /tmp/dotfiles-backup/
-```
-
-- [ ] **Step 2: Confirmer que hyprpaper.conf n'a rien d'unique à perdre**
-
-```bash
-diff ~/.config/hypr/hyprpaper.conf hypr/.config/hypr/hyprpaper.conf && echo "IDENTIQUES — suppression sans perte"
-```
-
-Attendu : `IDENTIQUES`. **Si le diff n'est pas vide, s'arrêter** et reporter la différence — le fichier live a divergé depuis l'analyse.
-
-- [ ] **Step 3: Supprimer les vrais fichiers et le dossier vestigial**
-
-```bash
-rm ~/.config/hypr/colors.lua ~/.config/hypr/hyprpaper.conf
-git rm -r colors/
-```
-
-- [ ] **Step 4: Vérifier stow à blanc avant d'agir**
-
-```bash
-cd "$(git rev-parse --show-toplevel)"
-for p in hypr waybar rofi dunst hyprlock kitty; do
-    echo "--- $p"
-    stow -n -v -t "$HOME" "$p" 2>&1
-done
-```
-
-Attendu : aucun `CONFLICT`. Un conflit signale un vrai fichier restant — le traiter avant de continuer.
-
-- [ ] **Step 5: Stow pour de bon**
-
-```bash
-stow -t "$HOME" hypr waybar rofi dunst hyprlock kitty
-```
-
-- [ ] **Step 6: Vérifier que tout est symlink**
-
-```bash
-for f in ~/.config/hypr/colors.lua ~/.config/hypr/hyprpaper.conf \
-         ~/.config/hypr/hyprland.lua ~/.config/waybar/style.css \
-         ~/.config/waybar/colors.css ~/.config/rofi/clair-obscur.rasi \
-         ~/.config/dunst/dunstrc ~/.config/kitty/kitty.conf; do
-    if [ -L "$f" ]; then echo "OK   symlink  $f"; else echo "ÉCHEC pas un symlink : $f"; fi
-done
-```
-
-Attendu : huit `OK`.
-
-- [ ] **Step 7: Écrire le README**
-
-```markdown
+````markdown
 # Clair Obscur — dotfiles
 
 Rice Hyprland inspiré de Clair Obscur : Expedition 33.
@@ -1467,8 +1590,8 @@ Belle Époque sombre — or patiné sur noirs chauds.
 portant l'en-tête `GÉNÉRÉ PAR`.
 
 ```bash
-python3 bin/generate_theme.py                  # régénère les fragments
-python3 bin/generate_theme.py --check-contrast  # vérifie les seuils
+python3 bin/generate_theme.py                   # régénère les fragments
+python3 bin/generate_theme.py --check-contrast   # vérifie les seuils
 ```
 
 Le contrôle de contraste tourne avant chaque génération : une palette qui
@@ -1477,14 +1600,21 @@ franchit un seuil ne peut pas atteindre les fichiers.
 Seuils : rôles d'interface ≥ 4,5:1 (WCAG AA), ANSI ≥ 3:1 (convention terminal).
 `black` est le seul exempté — dans un thème sombre, l'ANSI black *est* le fond.
 
+Dunst est généré en entier depuis `templates/dunstrc.in` : il ne supporte ni
+`include` ni variables. C'est la seule exception.
+
 ## Installation
 
 ```bash
 ./bin/install-fonts.sh
-stow -t "$HOME" hypr waybar rofi dunst hyprlock kitty
+stow -R -t "$HOME" hypr waybar rofi dunst hyprlock kitty
 ```
 
 `bin/` et `templates/` ne sont pas des paquets stow.
+
+`~/.config/{hypr,waybar,rofi,dunst,kitty}` sont de vrais dossiers (deux paquets
+partagent `~/.config/hypr`), donc **tout nouveau fichier exige un `stow -R`** —
+il n'apparaît pas tout seul.
 
 ## Tests
 
@@ -1504,79 +1634,90 @@ Stdlib uniquement — pas de pytest, pas de dépendance.
 | `templates/dunstrc.in` | dunst ne sait ni importer ni utiliser de variables |
 | `docs/superpowers/specs/` | designs |
 | `docs/superpowers/plans/` | plans d'implémentation |
-```
+````
 
-- [ ] **Step 8: Recette d'acceptation complète**
-
-Les huit critères de la spec, dans l'ordre :
+- [ ] **Step 2: Recette d'acceptation — les huit critères de la spec**
 
 ```bash
 cd "$(git rev-parse --show-toplevel)"
 
-echo "--- 1. idempotence"
+echo "=== 1. idempotence"
 python3 bin/generate_theme.py >/dev/null && git diff --exit-code && echo "OK"
 
-echo "--- 2. contrastes"
+echo "=== 2. contrastes"
 python3 bin/generate_theme.py --check-contrast
 
-echo "--- 3. aucun hex en dur"
-grep -ri 'c9a961' --exclude-dir=.git --exclude-dir=docs . \
-  | grep -v 'palette.toml' | grep -v 'GÉNÉRÉ' || echo "OK aucun hex égaré"
+echo "=== 3. aucun hex égaré"
+attendu=$(printf '%s\n' ./palette.toml ./hypr/.config/hypr/colors.lua \
+    ./waybar/.config/waybar/colors.css ./rofi/.config/rofi/colors.rasi \
+    ./hyprlock/.config/hypr/colors.conf ./kitty/.config/kitty/colors.conf \
+    ./dunst/.config/dunst/dunstrc | sort)
+trouve=$(grep -rIl 'c9a961' --exclude-dir=.git --exclude-dir=docs \
+    --exclude-dir=tests --exclude-dir=.superpowers . | sort)
+diff <(echo "$attendu") <(echo "$trouve") && echo "OK aucun hex égaré"
 
-echo "--- 4. stow sans conflit"
-for p in hypr waybar rofi dunst hyprlock kitty; do stow -n -t "$HOME" "$p" || echo "CONFLIT $p"; done
+echo "=== 4. stow sans conflit"
+for p in hypr waybar rofi dunst hyprlock kitty; do
+    stow -n -R -t "$HOME" "$p" 2>&1 | grep -i conflict && echo "CONFLIT $p" || true
+done; echo "OK"
 
-echo "--- 5. polices"
+echo "=== 5. polices"
 fc-match "JetBrainsMono Nerd Font"; fc-match Cinzel; fc-match "Cormorant Garamond"
 
-echo "--- 6. agent polkit"
-pgrep -f polkit-gnome-authentication-agent >/dev/null && echo "OK agent actif" || echo "ÉCHEC — relancer la session"
+echo "=== 6. agent polkit (exige une RECONNEXION, pas un reload)"
+pgrep -f polkit-gnome-authentication-agent >/dev/null \
+    && echo "OK agent actif" || echo "À VÉRIFIER après relance de session"
 
-echo "--- 7. aucun bind en double"
-grep -oE 'mainMod \.\. " \+ [^"]*"' hypr/.config/hypr/hyprland.lua | sort | uniq -d || echo "OK"
+echo "=== 7. aucun bind en double"
+grep -oE 'mainMod \.\. " \+ [^"]*"' hypr/.config/hypr/hyprland.lua \
+    | sort | uniq -d | grep . && echo "ÉCHEC bind double" || echo "OK"
 
-echo "--- 8. les outils démarrent"
-hyprctl reload && echo "OK hyprland"
+echo "=== 8. les outils démarrent"
+hyprctl reload >/dev/null && echo "OK hyprland"
 dunst --config dunst/.config/dunst/dunstrc --print >/dev/null 2>&1 && echo "OK dunst"
 rofi -dump-theme >/dev/null 2>&1 && echo "OK rofi"
 ```
 
-Le critère 6 exige une **relance de session** : l'autostart ne rejoue pas sur `hyprctl reload`. Le noter et vérifier après reconnexion.
+Le critère 6 exige une **relance de session** : l'autostart ne rejoue pas sur `hyprctl reload`. Le noter comme à vérifier après reconnexion, ce n'est pas un échec.
 
-- [ ] **Step 9: Vérification du changement de couleur de bout en bout**
+- [ ] **Step 3: Preuve de bout en bout de la source unique**
 
-La preuve que la source unique fonctionne :
+C'est la vérification qui compte : un changement dans `palette.toml` atteint-il **les six** fichiers ?
 
 ```bash
-sed -i 's/accent_gold     = "#c9a961"/accent_gold     = "#ff0000"/' palette.toml
-python3 bin/generate_theme.py
+sed -i 's/^accent_gold     = "#c9a961"/accent_gold     = "#ff0000"/' palette.toml
+python3 bin/generate_theme.py >/dev/null
 grep -l 'ff0000' hypr/.config/hypr/colors.lua waybar/.config/waybar/colors.css \
     rofi/.config/rofi/colors.rasi hyprlock/.config/hypr/colors.conf \
-    kitty/.config/kitty/colors.conf dunst/.config/dunst/dunstrc
+    kitty/.config/kitty/colors.conf dunst/.config/dunst/dunstrc | wc -l
 ```
 
-Attendu : **les six fichiers** sont listés. Puis annuler :
+Attendu : `6`. Si un seul fichier manque, la source unique est un mensonge — chercher pourquoi avant de continuer.
+
+Puis annuler :
 
 ```bash
-git checkout palette.toml && python3 bin/generate_theme.py && git diff --exit-code && echo "OK revenu à l'état initial"
+git checkout palette.toml && python3 bin/generate_theme.py >/dev/null \
+    && git diff --exit-code && echo "OK revenu à l'état initial"
 ```
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A
-git commit -m "fix: réparer la dérive stow, supprimer colors/ vestigial, README"
+git commit -m "docs: README — palette.toml comme source de vérité"
 ```
 
 ---
 
-## Récapitulatif des six bugs réparés
+## Récapitulatif des sept bugs réparés
 
 | # | Bug | Où | Tâche |
 |---|---|---|---|
-| 1 | Police fantôme `JetBrainMono` (sans `s`) → Noto Sans Mono | `style.css:2`, `config.rasi:2` | 5, 6 |
-| 2 | Agent polkit mort (`authentification`) — **bug fonctionnel** | `hyprland.lua:57` | 4 |
-| 3 | Chemin hyprlock cassé (`~/Pictures?wallpaper.jpg`) | `hyprlock.conf` | 7 |
-| 4 | Double bind `SUPER+SHIFT+S` | `hyprland.lua:279,299` | 4 |
-| 5 | Palette morte (`dofile` chargé, jamais lu) | `hyprland.lua:42` | 4 |
-| 6 | Dérive stow (`colors.lua`, `hyprpaper.conf` non symlinkés) | `~/.config/hypr/` | 10 |
+| 1 | Police fantôme `JetBrainMono` (sans `s`) → Noto Sans Mono | `style.css:2`, `config.rasi:2` | 7, 8 |
+| 2 | Agent polkit mort (`authentification`) — **bug fonctionnel** | `hyprland.lua:57` | 6 |
+| 3 | Chemin hyprlock cassé (`~/Pictures?wallpaper.jpg`) | `hyprlock.conf` | 9 |
+| 4 | Double bind `SUPER+SHIFT+S` | `hyprland.lua:279,299` | 6 |
+| 5 | Palette morte (`dofile` chargé, jamais lu) | `hyprland.lua:42` | 6 |
+| 6 | Dérive stow (`colors.lua`, `hyprpaper.conf` non symlinkés) | `~/.config/hypr/` | 5 |
+| 7 | Shadow config violet hors repo (4 fichiers, dont un actif) | `~/.config/**` | 5 |
