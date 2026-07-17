@@ -1,0 +1,55 @@
+# =====================================================================
+# Palette Clair Obscur — SEULE SOURCE DE VÉRITÉ des couleurs.
+#
+# Éditer ce fichier, puis :   python3 bin/generate_theme.py
+# Vérifier les contrastes :   python3 bin/generate_theme.py --check-contrast
+#
+# Ne JAMAIS éditer un fichier portant l'en-tête « GÉNÉRÉ PAR ».
+# =====================================================================
+
+[meta]
+default_variant = "nuit"
+
+# --- Variante nuit -----------------------------------------------------
+# Contrastes indiqués sur bg_primary (#0d0b0a).
+
+[variants.nuit.roles]
+bg_primary      = "#0d0b0a"  # fond principal
+bg_secondary    = "#1a1512"  # barre, surfaces plates
+bg_elevated     = "#241d18"  # popup rofi — doit se détacher de la barre
+accent_gold     = "#c9a961"  # 8,73:1  — accent principal
+accent_gold_dim = "#8a7442"  #         — inactif / survol, dégradé de bordure
+accent_red      = "#7a1f1f"  # 1,91:1  — FOND UNIQUEMENT (illisible en texte)
+text_primary    = "#e8dcc8"  # 14,50:1
+text_muted      = "#857b6e"  # 4,73:1
+border_active   = "#c9a961"
+border_inactive = "#3d3730"
+
+# --- ANSI : pigments d'époque ------------------------------------------
+# La palette n'a ni vert ni bleu ; tout décliner en or rendrait `git diff`
+# illisible. Ces teintes sont désaturées et chaudes pour rester dans
+# l'univers visuel, tout en restant discriminables.
+#
+# Écart rouge/vert délibéré (3,85 vs 5,93) : la différence de luminosité,
+# et pas seulement de teinte, garde les diffs lisibles en deutéranopie.
+#
+# `black` est exempté du seuil de 3:1 — dans un thème sombre, l'ANSI black
+# EST la couleur de fond. C'est le seul exempté.
+
+[variants.nuit.ansi]
+black          = "#1a1512"  #  1,08:1  exempté — couleur de fond par convention
+red            = "#b84a4a"  #  3,85:1  garance
+green          = "#7d9470"  #  5,93:1  vert-de-gris
+yellow         = "#c9a961"  #  8,73:1  or
+blue           = "#5a7186"  #  3,87:1  bleu de Prusse délavé
+magenta        = "#7a5f73"  #  3,47:1  mauve fané
+cyan           = "#5f7373"  #  3,91:1  céladon
+white          = "#e8dcc8"  # 14,50:1  crème
+bright_black   = "#6b6459"  #  3,36:1  commentaires — doit rester lisible
+bright_red     = "#d16a6a"  #  5,59:1
+bright_green   = "#9ab08d"  #  8,39:1
+bright_yellow  = "#e0c485"  # 11,60:1
+bright_blue    = "#7b93a8"  #  6,15:1
+bright_magenta = "#9d7e96"  #  5,48:1
+bright_cyan    = "#7f9696"  #  6,27:1
+bright_white   = "#f5ecdd"  # 16,76:1
