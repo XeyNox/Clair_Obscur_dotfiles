@@ -31,3 +31,5 @@ Task 5: complete (commits 16fd80f..91e1a92, review clean — reviewer a audité 
 Task 6: complete (commits 74019ed..cfb0aef, review clean)
   3 bugs réparés en live : palette branchée (bordure ffc9a961/ff8a7442 gradient 45deg confirmée), polkit (authentification->authentication + exec->exec_cmd), double bind SHIFT+S -> déplacement passe sur SHIFT+X.
   Note : le fix polkit ne se vérifie qu'au prochain démarrage de session (le hook hyprland.start ne rejoue pas sur reload).
+Task 7: complete (commits 2c72e2a..b371d44, review clean — @import à l'octet 0 vérifié par hexdump, 7 rôles croisés avec colors.css)
+  waybar sur palette dorée, cyan #33ccff éliminé, police fantôme JetBrainMono->JetBrainsMono corrigée.
