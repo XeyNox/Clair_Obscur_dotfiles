@@ -36,3 +36,6 @@ Task 7: complete (commits 2c72e2a..b371d44, review clean — @import à l'octet 
 Task 8: complete (commits f2f2fb2..013fc07, review clean — 7 rôles en tirets croisés avec colors.rasi, re-stow fait)
   Thème rofi maison clair-obscur.rasi + config.rasi en @import. Arc-Dark abandonné. dump-theme exit=0.
   Validation visuelle (rofi -show drun) différée à l'humain — pas de fenêtre interactive en agent.
+Task 9: complete (commits 724a247..9fe6e83, review clean — noms de propriétés croisés contre le binaire hyprlock 0.9.5)
+  hyprlock sur palette, horloge Cinzel + date Cormorant, chemin wallpaper réparé (?  -> /wallpaper_clair_obscur.jpg).
+  Validation VISUELLE différée à l'humain (hyprlock verrouille pour de vrai, pas de mode syntaxe-seule). Vérif statique complète et clean.
