@@ -23,3 +23,8 @@ Task 3: complete (commits 8073823..e0de273, review clean — garde anti-placehol
 Task 4: complete (commits e1e9759..7087d69, review clean)
   DÉVIATION VALIDÉE : le script verbatim du plan avait un bug SIGPIPE (fc-list | grep -q sous pipefail -> exit 141 -> "déjà présente" toujours faux -> retéléchargement à chaque run, violant l'idempotence). L'implémenteur a corrigé (capture dans variable + here-string). Contrôleur a reproduit le bug (141) et validé le fix. Reviewer a confirmé qu'aucun autre pipe n'est vulnérable.
   Polices installées et résolues : Cormorant Garamond, Cinzel, JetBrainsMono Nerd Font.
+Task 5: complete (commits 16fd80f..91e1a92, review clean — reviewer a audité l'état système, pas le diff : symlinks orphelins, conflits stow, --adopt, tout OK)
+  DESTRUCTIF EXÉCUTÉ : 5 vrais fichiers supprimés de ~/.config, sauvegardés dans /tmp/dotfiles-backup/ (dunst-dunstrc, hypr-colors.lua, hypr-hyprpaper.conf, rofi-colors.rasi, waybar-colors.css). colors/ retiré du repo.
+  Erreur du brief détectée et corrigée par l'implémenteur : ~/.config/hyprlock.conf -> ~/.config/hypr/hyprlock.conf.
+  Minor : dunst tourne encore avec l'ancien dunstrc violet en mémoire (reload en Task 11).
+  Minor : /tmp/dotfiles-backup/ non nettoyé (volontaire, filet de sécurité).
