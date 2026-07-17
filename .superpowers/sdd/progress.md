@@ -17,3 +17,6 @@ Task 2: complete (commits 6622dfa..bd4fe42, review clean — Lua validé par ex�
   Contrôleur : .pyc échappés en Task 1 retirés du suivi + .gitignore Python (commit bd4fe42). Le reviewer T1 avait raté ça.
   Minor reporté au review final : TestIdempotence est tautologique (2 appels d'une fonction pure en mémoire). Code imposé par le plan ; l'idempotence réelle est vérifiée sur disque au Step 7. Ne détecterait pas un effet de bord non déterministe dans write_all.
   Minor reporté au review final : hex #c9a961 en dur dans le docstring de _rgb() (illustratif, imposé par le plan).
+Task 3: complete (commits 8073823..e0de273, review clean — garde anti-placeholder vérifiée non contournable)
+  Note env : l'implémenteur a dû stop/mask dunst.service pour vérifier --print (conflit D-Bus). Restauré et confirmé par le contrôleur (dunst tourne, service actif, notify-send OK).
+  Minor reporté au review final : TestIdempotence n'inclut pas emit_dunstrc. L'idempotence du dunstrc n'est vérifiée que manuellement (md5sum), pas par la suite.
