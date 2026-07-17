@@ -39,6 +39,7 @@ local fileManager = "thunar"
 local menu        = "rofi -show drun"
 local browser     = "firefox"
 local locker      = "hyprlock"
+local colors = dofile(os.getenv("HOME") .. "/.config/hypr/colors.lua")
 
 -------------------
 ---- AUTOSTART ----
