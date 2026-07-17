@@ -120,7 +120,7 @@ def header(prefixe: str, suffixe: str = "") -> str:
 
 
 def _rgb(hex_couleur: str) -> str:
-    """#c9a961 -> rgb(c9a961) — format attendu par Hyprland et hyprlang."""
+    """#rrggbb -> rgb(rrggbb) — format attendu par Hyprland et hyprlang."""
     return f"rgb({hex_couleur.lstrip('#')})"
 
 
