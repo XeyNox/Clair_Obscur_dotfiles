@@ -364,7 +364,7 @@ if __name__ == "__main__":
 python3 -m unittest discover -s tests -v
 ```
 
-Attendu : `OK` — 10 tests.
+Attendu : `OK` — 12 tests.
 
 - [ ] **Step 6: Vérifier le CLI à la main**
 
@@ -600,7 +600,7 @@ Le contrôle de contraste tourne donc **avant chaque génération** : une palett
 python3 -m unittest discover -s tests -v
 ```
 
-Attendu : `OK` — 18 tests.
+Attendu : `OK` — 19 tests (12 de la Task 1 + 7 ici).
 
 - [ ] **Step 5: Générer les fragments**
 
@@ -814,7 +814,7 @@ CIBLES = (
 python3 -m unittest discover -s tests -v
 ```
 
-Attendu : `OK` — 23 tests.
+Attendu : `OK` — 24 tests (19 des Tasks 1–2 + 5 ici).
 
 - [ ] **Step 6: Vérifier que dunst accepte le fichier**
 

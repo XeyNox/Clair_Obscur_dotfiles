@@ -11,3 +11,5 @@ Base : fcc58f5 (spec)
 - Plan réordonné en 11 tâches.
 
 ## Tâches
+Task 1: complete (commits daa00d2..6622dfa, review clean — reviewer a recalculé les 21 contrastes, tous exacts)
+  Minor reporté au review final : main() ne capture pas le KeyError d'un --variant invalide (traceback brut au lieu d'un message propre). Non exigé Task 1.
