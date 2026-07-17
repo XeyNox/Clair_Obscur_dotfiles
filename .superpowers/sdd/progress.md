@@ -20,3 +20,6 @@ Task 2: complete (commits 6622dfa..bd4fe42, review clean — Lua validé par ex�
 Task 3: complete (commits 8073823..e0de273, review clean — garde anti-placeholder vérifiée non contournable)
   Note env : l'implémenteur a dû stop/mask dunst.service pour vérifier --print (conflit D-Bus). Restauré et confirmé par le contrôleur (dunst tourne, service actif, notify-send OK).
   Minor reporté au review final : TestIdempotence n'inclut pas emit_dunstrc. L'idempotence du dunstrc n'est vérifiée que manuellement (md5sum), pas par la suite.
+Task 4: complete (commits e1e9759..7087d69, review clean)
+  DÉVIATION VALIDÉE : le script verbatim du plan avait un bug SIGPIPE (fc-list | grep -q sous pipefail -> exit 141 -> "déjà présente" toujours faux -> retéléchargement à chaque run, violant l'idempotence). L'implémenteur a corrigé (capture dans variable + here-string). Contrôleur a reproduit le bug (141) et validé le fix. Reviewer a confirmé qu'aucun autre pipe n'est vulnérable.
+  Polices installées et résolues : Cormorant Garamond, Cinzel, JetBrainsMono Nerd Font.
