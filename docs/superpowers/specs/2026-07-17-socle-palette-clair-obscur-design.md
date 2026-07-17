@@ -57,7 +57,7 @@ vérité sur laquelle les tranches suivantes s'appuient.
 palette.toml                    ← seule source de vérité éditée à la main
       │
       ▼
-bin/generate-theme.py           ← Python stdlib (tomllib), zéro dépendance
+bin/generate_theme.py           ← Python stdlib (tomllib), zéro dépendance
       │
       ├──► hypr/.config/hypr/colors.lua           (table Lua)
       ├──► waybar/.config/waybar/colors.css       (@define-color)
@@ -71,7 +71,7 @@ bin/generate-theme.py           ← Python stdlib (tomllib), zéro dépendance
 
 1. **Seul `palette.toml` s'édite à la main** pour les couleurs.
 2. **Les fragments générés sont versionnés**, avec un en-tête
-   `# GÉNÉRÉ PAR bin/generate-theme.py — NE PAS ÉDITER — source: palette.toml`.
+   `# GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml`.
    Le repo reste clonable et utilisable sans lancer le script.
 3. **Les configs restent écrites à la main** (`hyprland.lua`, `style.css`, thème
    rofi, `hyprlock.conf`, `kitty.conf`) et importent leur fragment. Seules les
@@ -83,7 +83,11 @@ bin/generate-theme.py           ← Python stdlib (tomllib), zéro dépendance
 ### Emplacement des fichiers
 
 - `palette.toml` à la **racine** du repo — c'est LE fichier à éditer, il doit se voir.
-- `bin/generate-theme.py` — outil de repo, **pas** un paquet stow.
+- `bin/generate_theme.py` — outil de repo, **pas** un paquet stow. Underscore et
+  non tiret : Python n'importe pas les modules dont le nom contient un tiret, et
+  les tests doivent pouvoir l'importer.
+- `tests/test_generate_theme.py` — tests en `unittest` (stdlib). `pytest` n'est
+  pas installé, et l'engagement « zéro dépendance » vaut aussi pour les tests.
 - `templates/dunstrc.in` — template, pas un paquet stow.
 - Le dossier `colors/` est **supprimé** : vestigial (jamais stowable — pas de
   sous-dossier `.config/`), son contenu est absorbé par `palette.toml`.
@@ -174,13 +178,24 @@ obtenues en éclaircissant la teinte normale, et soumises au même contrôle.
 permissive que les 4,5:1 des rôles d'interface. Compromis assumé entre contraste
 et cohérence de palette, documenté ici pour qu'il ne soit pas relu comme un oubli.
 
+**Exception : `black` est exempté du seuil.** Dans tout thème sombre, l'ANSI
+`black` *est* la couleur de fond (ici 1,08:1 sur `bg_primary`) — le seuil n'a
+pas de sens pour lui. C'est le seul exempté, et le contrôle échoue si un autre
+l'invoque.
+
+**`bright_black` = `#6b6459` (3,36:1).** C'est la couleur des commentaires en
+coloration syntaxique, donc elle doit rester lisible : à `#3d3730` (= `border_inactive`)
+elle donnerait 1,67:1, illisible. `#6b6459` est l'ancien `text_muted`, écarté des
+rôles d'interface pour cause de 3,36:1 — insuffisant pour un label, conforme pour
+de l'ANSI.
+
 **Écart rouge/vert délibéré** : garance à 3,85:1 contre vert-de-gris à 5,93:1.
 La différence de luminosité (et pas seulement de teinte) garde les diffs lisibles
 en cas de deutéranopie.
 
 ### Contrôle automatisé
 
-`bin/generate-theme.py --check-contrast` recalcule tous les ratios ci-dessus et
+`bin/generate_theme.py --check-contrast` recalcule tous les ratios ci-dessus et
 sort en code d'erreur non nul si un rôle d'interface passe sous 4,5:1 ou une
 couleur ANSI sous 3:1. Les contrastes sont donc **vérifiables, pas affirmés** —
 et la tranche 3 (variante jour) hérite du garde-fou gratuitement.
@@ -263,9 +278,9 @@ encombrante) — d'où le script d'installation.
 
 ## Critères d'acceptation
 
-1. `bin/generate-theme.py` régénère les 6 fichiers ; un second passage ne produit
+1. `bin/generate_theme.py` régénère les 6 fichiers ; un second passage ne produit
    **aucun diff git** (idempotence).
-2. `bin/generate-theme.py --check-contrast` sort en 0 sur la variante `nuit`.
+2. `bin/generate_theme.py --check-contrast` sort en 0 sur la variante `nuit`.
 3. Modifier `accent_gold` dans `palette.toml`, régénérer, recharger : la couleur
    change dans les 6 outils. **Aucun hex de la palette n'apparaît en dur** hors
    `palette.toml` et fragments générés — vérifiable par `grep -ri 'c9a961' --exclude-dir=.git`.
