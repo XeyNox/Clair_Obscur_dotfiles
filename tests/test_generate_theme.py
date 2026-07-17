@@ -137,5 +137,31 @@ class TestIdempotence(unittest.TestCase):
         self.assertEqual(premier, second)
 
 
+class TestDunstrc(unittest.TestCase):
+    def setUp(self):
+        self.p = generate_theme.load_palette(REPO / "palette.toml")
+        self.out = generate_theme.emit_dunstrc(self.p)
+
+    def test_porte_l_entete(self):
+        self.assertIn("NE PAS ÉDITER", self.out)
+
+    def test_aucun_placeholder_ne_subsiste(self):
+        self.assertNotIn("{{", self.out)
+        self.assertNotIn("}}", self.out)
+
+    def test_les_couleurs_sont_entre_guillemets(self):
+        # dunst interprète un # non quoté comme un commentaire.
+        self.assertIn('background = "#1a1512"', self.out)
+
+    def test_critical_est_un_bandeau_rouge_a_texte_creme(self):
+        bloc = self.out.split("[urgency_critical]")[1]
+        self.assertIn('background = "#7a1f1f"', bloc)
+        self.assertIn('foreground = "#e8dcc8"', bloc)
+
+    def test_les_trois_urgences_sont_presentes(self):
+        for section in ("[urgency_low]", "[urgency_normal]", "[urgency_critical]"):
+            self.assertIn(section, self.out)
+
+
 if __name__ == "__main__":
     unittest.main()

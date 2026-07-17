@@ -174,12 +174,27 @@ def emit_kitty(palette: dict) -> str:
     return "\n".join(lignes) + "\n"
 
 
+def emit_dunstrc(palette: dict) -> str:
+    """Génère le dunstrc ENTIER : dunst ne sait ni importer ni utiliser de variables."""
+    gabarit = (REPO / "templates" / "dunstrc.in").read_text(encoding="utf-8")
+    sortie = gabarit.replace("{{HEADER}}", _AVERTISSEMENT)
+    for nom, val in palette["roles"].items():
+        sortie = sortie.replace(f"{{{{{nom}}}}}", val)
+    if "{{" in sortie or "}}" in sortie:
+        raise ValueError(
+            "placeholder non substitué dans templates/dunstrc.in — "
+            "un rôle du template n'existe pas dans palette.toml"
+        )
+    return sortie
+
+
 CIBLES = (
     ("hypr/.config/hypr/colors.lua", emit_lua),
     ("waybar/.config/waybar/colors.css", emit_css),
     ("rofi/.config/rofi/colors.rasi", emit_rasi),
     ("hyprlock/.config/hypr/colors.conf", emit_hyprlang),
     ("kitty/.config/kitty/colors.conf", emit_kitty),
+    ("dunst/.config/dunst/dunstrc", emit_dunstrc),
 )
 
 
