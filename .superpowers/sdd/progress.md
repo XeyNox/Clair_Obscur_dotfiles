@@ -39,3 +39,8 @@ Task 8: complete (commits f2f2fb2..013fc07, review clean — 7 rôles en tirets 
 Task 9: complete (commits 724a247..9fe6e83, review clean — noms de propriétés croisés contre le binaire hyprlock 0.9.5)
   hyprlock sur palette, horloge Cinzel + date Cormorant, chemin wallpaper réparé (?  -> /wallpaper_clair_obscur.jpg).
   Validation VISUELLE différée à l'humain (hyprlock verrouille pour de vrai, pas de mode syntaxe-seule). Vérif statique complète et clean.
+Task 10: complete (commits 3ab4153..4e9453d, review clean — config rechargée via kitty +runpy, garance plus sombre que vert-de-gris confirmé)
+  Paquet kitty créé (terminal n'avait aucune config), re-stow fait, ANSI pigments d'époque.
+  Adaptation validée : kitty --debug-config absent en 0.47.4, remplacé par kitty +runpy load_config.
+  Validation VISUELLE des 16 teintes différée à l'humain.
+  Minor POUR REVIEW FINAL : adjust_line_height 110% (kitty.conf:5) déprécié en kitty 0.47.4. Fonctionne (mappé vers modify_font cell_height 110% en interne) mais syntaxe historique. Fix trivial : remplacer par `modify_font cell_height 110%`. Hérité du plan verbatim.
