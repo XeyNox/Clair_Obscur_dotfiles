@@ -102,6 +102,98 @@ def check_contrast(palette: dict) -> list[str]:
     return echecs
 
 
+# Ordre ANSI de kitty : color0..color15
+ORDRE_ANSI = (
+    "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
+    "bright_black", "bright_red", "bright_green", "bright_yellow",
+    "bright_blue", "bright_magenta", "bright_cyan", "bright_white",
+)
+
+_AVERTISSEMENT = (
+    "GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml"
+)
+
+
+def header(prefixe: str, suffixe: str = "") -> str:
+    """En-tête d'avertissement dans la syntaxe de commentaire de la cible."""
+    return f"{prefixe} {_AVERTISSEMENT}{suffixe}\n"
+
+
+def _rgb(hex_couleur: str) -> str:
+    """#c9a961 -> rgb(c9a961) — format attendu par Hyprland et hyprlang."""
+    return f"rgb({hex_couleur.lstrip('#')})"
+
+
+def emit_lua(palette: dict) -> str:
+    lignes = [header("--"), "return {"]
+    for nom, val in palette["roles"].items():
+        lignes.append(f'    {nom} = "{_rgb(val)}",')
+    lignes.append("    ansi = {")
+    for nom, val in palette["ansi"].items():
+        lignes.append(f'        {nom} = "{val}",')
+    lignes.append("    },")
+    lignes.append("}")
+    return "\n".join(lignes) + "\n"
+
+
+def emit_css(palette: dict) -> str:
+    lignes = [header("/*", " */")]
+    for nom, val in palette["roles"].items():
+        lignes.append(f"@define-color {nom} {val};")
+    return "\n".join(lignes) + "\n"
+
+
+def emit_rasi(palette: dict) -> str:
+    lignes = [header("/*", " */"), "* {"]
+    for nom, val in palette["roles"].items():
+        lignes.append(f"    {nom.replace('_', '-')}: {val};")
+    lignes.append("}")
+    return "\n".join(lignes) + "\n"
+
+
+def emit_hyprlang(palette: dict) -> str:
+    lignes = [header("#")]
+    for nom, val in palette["roles"].items():
+        lignes.append(f"${nom} = {_rgb(val)}")
+    return "\n".join(lignes) + "\n"
+
+
+def emit_kitty(palette: dict) -> str:
+    roles, ansi = palette["roles"], palette["ansi"]
+    lignes = [
+        header("#"),
+        f"background {roles['bg_primary']}",
+        f"foreground {roles['text_primary']}",
+        f"cursor {roles['accent_gold']}",
+        f"selection_background {roles['bg_elevated']}",
+        f"selection_foreground {roles['text_primary']}",
+        "",
+    ]
+    for i, nom in enumerate(ORDRE_ANSI):
+        lignes.append(f"color{i} {ansi[nom]}")
+    return "\n".join(lignes) + "\n"
+
+
+CIBLES = (
+    ("hypr/.config/hypr/colors.lua", emit_lua),
+    ("waybar/.config/waybar/colors.css", emit_css),
+    ("rofi/.config/rofi/colors.rasi", emit_rasi),
+    ("hyprlock/.config/hypr/colors.conf", emit_hyprlang),
+    ("kitty/.config/kitty/colors.conf", emit_kitty),
+)
+
+
+def write_all(palette: dict) -> list[Path]:
+    """Écrit tous les fragments. Retourne les chemins écrits."""
+    ecrits = []
+    for rel, emetteur in CIBLES:
+        chemin = REPO / rel
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        chemin.write_text(emetteur(palette), encoding="utf-8")
+        ecrits.append(chemin)
+    return ecrits
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--variant", default=None, help="variante à générer")
@@ -123,6 +215,15 @@ def main(argv: list[str] | None = None) -> int:
         print("contrastes : tout passe")
         return 0
 
+    echecs = check_contrast(palette)
+    if echecs:
+        for e in echecs:
+            print(f"ÉCHEC {e}", file=sys.stderr)
+        print("génération annulée : corriger palette.toml", file=sys.stderr)
+        return 1
+
+    for chemin in write_all(palette):
+        print(f"écrit {chemin.relative_to(REPO)}")
     return 0
 
 

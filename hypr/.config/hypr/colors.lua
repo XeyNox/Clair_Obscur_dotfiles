@@ -1,0 +1,32 @@
+-- GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml
+
+return {
+    bg_primary = "rgb(0d0b0a)",
+    bg_secondary = "rgb(1a1512)",
+    bg_elevated = "rgb(241d18)",
+    accent_gold = "rgb(c9a961)",
+    accent_gold_dim = "rgb(8a7442)",
+    accent_red = "rgb(7a1f1f)",
+    text_primary = "rgb(e8dcc8)",
+    text_muted = "rgb(857b6e)",
+    border_active = "rgb(c9a961)",
+    border_inactive = "rgb(3d3730)",
+    ansi = {
+        black = "#1a1512",
+        red = "#b84a4a",
+        green = "#7d9470",
+        yellow = "#c9a961",
+        blue = "#5a7186",
+        magenta = "#7a5f73",
+        cyan = "#5f7373",
+        white = "#e8dcc8",
+        bright_black = "#6b6459",
+        bright_red = "#d16a6a",
+        bright_green = "#9ab08d",
+        bright_yellow = "#e0c485",
+        bright_blue = "#7b93a8",
+        bright_magenta = "#9d7e96",
+        bright_cyan = "#7f9696",
+        bright_white = "#f5ecdd",
+    },
+}

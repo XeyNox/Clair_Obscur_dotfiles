@@ -1,0 +1,14 @@
+/* GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml */
+
+* {
+    bg-primary: #0d0b0a;
+    bg-secondary: #1a1512;
+    bg-elevated: #241d18;
+    accent-gold: #c9a961;
+    accent-gold-dim: #8a7442;
+    accent-red: #7a1f1f;
+    text-primary: #e8dcc8;
+    text-muted: #857b6e;
+    border-active: #c9a961;
+    border-inactive: #3d3730;
+}

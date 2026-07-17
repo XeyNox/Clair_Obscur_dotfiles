@@ -80,5 +80,62 @@ class TestCheckContrast(unittest.TestCase):
         self.assertTrue(any("bright_black" in e for e in echecs))
 
 
+class TestEmetteurs(unittest.TestCase):
+    def setUp(self):
+        self.p = generate_theme.load_palette(REPO / "palette.toml")
+
+    def test_lua_est_une_table_avec_rgb(self):
+        out = generate_theme.emit_lua(self.p)
+        self.assertIn("return {", out)
+        self.assertIn('accent_gold = "rgb(c9a961)"', out)
+        self.assertTrue(out.startswith("--"))  # en-tête en commentaire Lua
+
+    def test_css_utilise_define_color(self):
+        out = generate_theme.emit_css(self.p)
+        self.assertIn("@define-color accent_gold #c9a961;", out)
+        self.assertTrue(out.startswith("/*"))
+
+    def test_rasi_normalise_en_tirets(self):
+        out = generate_theme.emit_rasi(self.p)
+        self.assertIn("accent-gold: #c9a961;", out)
+        self.assertIn("* {", out)
+
+    def test_hyprlang_utilise_des_variables(self):
+        out = generate_theme.emit_hyprlang(self.p)
+        self.assertIn("$accent_gold = rgb(c9a961)", out)
+        self.assertTrue(out.startswith("#"))
+
+    def test_kitty_mappe_les_16_ansi(self):
+        out = generate_theme.emit_kitty(self.p)
+        self.assertIn("color3 #c9a961", out)   # yellow = or
+        self.assertIn("color15 #f5ecdd", out)  # bright_white
+        self.assertIn("background #0d0b0a", out)
+        self.assertIn("foreground #e8dcc8", out)
+
+    def test_tous_les_fragments_portent_l_entete(self):
+        for emetteur in (
+            generate_theme.emit_lua,
+            generate_theme.emit_css,
+            generate_theme.emit_rasi,
+            generate_theme.emit_hyprlang,
+            generate_theme.emit_kitty,
+        ):
+            self.assertIn("NE PAS ÉDITER", emetteur(self.p))
+            self.assertIn("palette.toml", emetteur(self.p))
+
+
+class TestIdempotence(unittest.TestCase):
+    def test_deux_passages_donnent_le_meme_contenu(self):
+        p = generate_theme.load_palette(REPO / "palette.toml")
+        emetteurs = (
+            generate_theme.emit_lua, generate_theme.emit_css,
+            generate_theme.emit_rasi, generate_theme.emit_hyprlang,
+            generate_theme.emit_kitty,
+        )
+        premier = {e.__name__: e(p) for e in emetteurs}
+        second = {e.__name__: e(p) for e in emetteurs}
+        self.assertEqual(premier, second)
+
+
 if __name__ == "__main__":
     unittest.main()
