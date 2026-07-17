@@ -44,3 +44,13 @@ Task 10: complete (commits 3ab4153..4e9453d, review clean — config rechargée 
   Adaptation validée : kitty --debug-config absent en 0.47.4, remplacé par kitty +runpy load_config.
   Validation VISUELLE des 16 teintes différée à l'humain.
   Minor POUR REVIEW FINAL : adjust_line_height 110% (kitty.conf:5) déprécié en kitty 0.47.4. Fonctionne (mappé vers modify_font cell_height 110% en interne) mais syntaxe historique. Fix trivial : remplacer par `modify_font cell_height 110%`. Hérité du plan verbatim.
+Task 11: complete (commits 51fbbae..e8fded3, review clean — preuve de bout en bout 6/6 re-confirmée indépendamment)
+  README + recette d'acceptation. 24/24 tests, contrastes OK, stow sans conflit, polices résolues.
+  Fix contrôleur : docstring _rgb() #c9a961 -> #rrggbb (critère 3 passe maintenant). C'était le Minor #2 de Task 2.
+  ATTENDU (pas un échec) : critère 6 polkit — le fix ne prend effet qu'au prochain démarrage de session (hook autostart ne rejoue pas sur reload). pgrep -f donne un faux positif (argv du wrapper).
+  Note env : dunst --print entre en conflit D-Bus avec le daemon vivant ; la config est saine (symlink vers le repo), ce n'est pas un échec du socle.
+
+## Minor restants pour triage au review final
+- kitty.conf:5 adjust_line_height 110% déprécié en kitty 0.47.4 (fonctionne, mappé en interne). Fix trivial : modify_font cell_height 110%.
+- TestIdempotence tautologique (2 appels fonction pure en mémoire) + n'inclut pas emit_dunstrc. Idempotence réelle vérifiée sur disque.
+- main() ne capture pas KeyError d'un --variant invalide (traceback brut).
