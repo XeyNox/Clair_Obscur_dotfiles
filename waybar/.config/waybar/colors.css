@@ -1,0 +1,12 @@
+/* GÉNÉRÉ PAR bin/generate_theme.py — NE PAS ÉDITER — source: palette.toml */
+
+@define-color bg_primary #0d0b0a;
+@define-color bg_secondary #1a1512;
+@define-color bg_elevated #241d18;
+@define-color accent_gold #c9a961;
+@define-color accent_gold_dim #8a7442;
+@define-color accent_red #7a1f1f;
+@define-color text_primary #e8dcc8;
+@define-color text_muted #857b6e;
+@define-color border_active #c9a961;
+@define-color border_inactive #3d3730;

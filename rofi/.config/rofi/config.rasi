@@ -1,5 +1,8 @@
 configuration {
-	font: "JetBrainMono Nerd Font 12";
+    font: "JetBrainsMono Nerd Font 12";
+    show-icons: true;
+    display-drun: "";
+    drun-display-format: "{name}";
 }
 
-@theme "/usr/share/rofi/themes/Arc-Dark.rasi"
+@import "clair-obscur.rasi"

@@ -1,0 +1,60 @@
+@import "colors.rasi"
+
+window {
+    width: 640px;
+    background-color: @bg-primary;
+    border: 2px;
+    border-color: @accent-gold-dim;
+    border-radius: 8px;
+    padding: 0;
+}
+
+inputbar {
+    background-color: @bg-secondary;
+    text-color: @text-primary;
+    padding: 14px 16px;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    font: "Cormorant Garamond 15";
+    text-color: @accent-gold;
+    margin: 0 10px 0 0;
+}
+
+entry {
+    text-color: @text-primary;
+    placeholder: "";
+    placeholder-color: @text-muted;
+}
+
+listview {
+    lines: 8;
+    background-color: @bg-primary;
+    padding: 8px;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-color: @text-muted;
+    background-color: transparent;
+}
+
+/* Clarté/obscurité : l'entrée sélectionnée est éclairée. */
+element selected {
+    background-color: @bg-elevated;
+    text-color: @accent-gold;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+}
+
+element-icon {
+    size: 22px;
+    margin: 0 10px 0 0;
+    background-color: transparent;
+}

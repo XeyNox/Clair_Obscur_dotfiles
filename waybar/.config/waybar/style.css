@@ -1,23 +1,55 @@
+@import "colors.css";
+
 * {
-	font-family: "JetBrainMono Nerd Font";
-	font-size: 13px;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
 }
 
 window#waybar {
-	background-color: rgba(20, 20, 20, 0.85);
-	color: #ffffff;
+    background-color: @bg_secondary;
+    color: @text_primary;
 }
 
 #workspaces button {
-	padding: 0 8px;
-	color: #ffffff;
+    padding: 0 10px;
+    color: @text_muted;
+    background-color: transparent;
+    border-bottom: 2px solid transparent;
 }
 
+/* Clarté/obscurité : l'espace actif est éclairé, les autres s'effacent. */
 #workspaces button.active {
-	background-color: #33ccff;
-	color: #000000;
+    color: @accent_gold;
+    border-bottom: 2px solid @accent_gold;
 }
 
-#clock, #pulseaudio, #network, #battery, #tray {
-	padding: 0 10px;
-} 
+#workspaces button:hover {
+    color: @accent_gold_dim;
+    background-color: @bg_elevated;
+}
+
+#clock {
+    font-family: "Cormorant Garamond";
+    font-size: 16px;
+    color: @accent_gold;
+    padding: 0 14px;
+}
+
+#pulseaudio, #network, #battery, #tray {
+    color: @text_primary;
+    padding: 0 10px;
+}
+
+#battery.warning {
+    color: @accent_gold;
+}
+
+/* accent_red est illisible en texte (1,91:1) : en état critique il sert de
+   fond, avec text_primary dessus (7,59:1). */
+#battery.critical {
+    background-color: @accent_red;
+    color: @text_primary;
+}

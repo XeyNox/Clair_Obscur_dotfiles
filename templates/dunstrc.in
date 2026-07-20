@@ -1,0 +1,88 @@
+# {{HEADER}}
+
+[global]
+    monitor = 0
+    follow = mouse
+    width = 340
+    height = (0, 300)
+    origin = top-right
+    offset = (16, 16)
+    scale = 0
+    notification_limit = 5
+
+    progress_bar = true
+    progress_bar_height = 8
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+
+    indicate_hidden = yes
+    transparency = 8
+    separator_height = 2
+    padding = 14
+    horizontal_padding = 16
+    text_icon_padding = 12
+    frame_width = 2
+    frame_color = "{{border_inactive}}"
+    separator_color = frame
+    corner_radius = 8
+    gap_size = 6
+
+    sort = yes
+    font = Cormorant Garamond 12
+    line_height = 0
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    ellipsize = middle
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+
+    enable_recursive_icon_lookup = true
+    icon_theme = Adwaita
+    icon_position = left
+    min_icon_size = 32
+    max_icon_size = 48
+
+    sticky_history = yes
+    history_length = 20
+
+    dmenu = /usr/bin/rofi -dmenu -p dunst
+    browser = /usr/bin/firefox
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_all
+    mouse_right_click = close_current
+
+[urgency_low]
+    background = "{{bg_secondary}}"
+    foreground = "{{text_muted}}"
+    frame_color = "{{border_inactive}}"
+    timeout = 8
+    default_icon = dialog-information
+
+[urgency_normal]
+    background = "{{bg_secondary}}"
+    foreground = "{{text_primary}}"
+    frame_color = "{{accent_gold_dim}}"
+    timeout = 10
+    override_pause_level = 30
+    default_icon = dialog-information
+
+# accent_red sur bg_primary ne donne que 1,91:1 : un liseré rouge serait
+# invisible. L'urgence critique est donc un bandeau plein — text_primary sur
+# accent_red donne 7,59:1.
+[urgency_critical]
+    background = "{{accent_red}}"
+    foreground = "{{text_primary}}"
+    frame_color = "{{accent_gold}}"
+    timeout = 0
+    override_pause_level = 60
+    default_icon = dialog-warning
