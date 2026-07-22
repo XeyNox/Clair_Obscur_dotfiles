@@ -24,6 +24,7 @@ text_primary    = "#e8dcc8"  # 14,50:1
 text_muted      = "#857b6e"  # 4,73:1
 border_active   = "#c9a961"
 border_inactive = "#3d3730"
+shadow          = "#050403"  # 1,04:1 — SOUS bg_primary : une ombre doit creuser
 
 # --- ANSI : pigments d'époque ------------------------------------------
 # La palette n'a ni vert ni bleu ; tout décliner en or rendrait `git diff`

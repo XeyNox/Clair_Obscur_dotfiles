@@ -124,10 +124,21 @@ def _rgb(hex_couleur: str) -> str:
     return f"rgb({hex_couleur.lstrip('#')})"
 
 
+def _hex_brut(hex_couleur: str) -> str:
+    """#rrggbb -> rrggbb — pour composer un alpha côté config."""
+    return hex_couleur.lstrip("#")
+
+
 def emit_lua(palette: dict) -> str:
     lignes = [header("--"), "return {"]
     for nom, val in palette["roles"].items():
         lignes.append(f'    {nom} = "{_rgb(val)}",')
+    # Hex bruts : Hyprland attend rgba(rrggbbaa) pour l'ombre, et l'alpha est
+    # un réglage esthétique qui appartient au config, pas à la palette.
+    lignes.append("    raw = {")
+    for nom, val in palette["roles"].items():
+        lignes.append(f'        {nom} = "{_hex_brut(val)}",')
+    lignes.append("    },")
     lignes.append("    ansi = {")
     for nom, val in palette["ansi"].items():
         lignes.append(f'        {nom} = "{val}",')

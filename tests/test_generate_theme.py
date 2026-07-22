@@ -56,6 +56,10 @@ class TestLoadPalette(unittest.TestCase):
         p = generate_theme.load_palette(REPO / "palette.toml")
         self.assertEqual(len(p["ansi"]), 16)
 
+    def test_le_role_shadow_existe(self):
+        p = generate_theme.load_palette(REPO / "palette.toml")
+        self.assertEqual(p["roles"]["shadow"], "#050403")
+
 
 class TestCheckContrast(unittest.TestCase):
     def test_la_palette_livree_passe(self):
@@ -78,6 +82,14 @@ class TestCheckContrast(unittest.TestCase):
         p["ansi"]["bright_black"] = "#3d3730"  # 1,67:1 — commentaires illisibles
         echecs = generate_theme.check_contrast(p)
         self.assertTrue(any("bright_black" in e for e in echecs))
+
+    def test_shadow_n_est_pas_controle(self):
+        # shadow est à 1,04:1 sur bg_primary — c'est le but, une ombre doit
+        # creuser sous le fond. Il n'est pas dans ROLES_TEXTE, donc la liste
+        # blanche l'ignore : aucune exemption à inventer, contrairement à black.
+        p = generate_theme.load_palette(REPO / "palette.toml")
+        self.assertIn("shadow", p["roles"])
+        self.assertEqual(generate_theme.check_contrast(p), [])
 
 
 class TestEmetteurs(unittest.TestCase):
@@ -122,6 +134,24 @@ class TestEmetteurs(unittest.TestCase):
         ):
             self.assertIn("NE PAS ÉDITER", emetteur(self.p))
             self.assertIn("palette.toml", emetteur(self.p))
+
+    def test_lua_expose_les_hex_bruts(self):
+        # Hyprland veut rgba(rrggbbaa) pour l'ombre ; _rgb() produit rgb(rrggbb).
+        # La table raw permet au config de composer l'alpha lui-même.
+        out = generate_theme.emit_lua(self.p)
+        self.assertIn("raw = {", out)
+        self.assertIn('shadow = "050403"', out)
+
+    def test_lua_raw_couvre_tous_les_roles(self):
+        out = generate_theme.emit_lua(self.p)
+        bloc = out.split("raw = {")[1].split("},")[0]
+        for nom in self.p["roles"]:
+            self.assertIn(f'{nom} = "', bloc)
+
+    def test_lua_raw_ne_contient_pas_de_diese(self):
+        out = generate_theme.emit_lua(self.p)
+        bloc = out.split("raw = {")[1].split("},")[0]
+        self.assertNotIn("#", bloc)
 
 
 class TestIdempotence(unittest.TestCase):

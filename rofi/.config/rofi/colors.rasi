@@ -11,4 +11,5 @@
     text-muted: #857b6e;
     border-active: #c9a961;
     border-inactive: #3d3730;
+    shadow: #050403;
 }
