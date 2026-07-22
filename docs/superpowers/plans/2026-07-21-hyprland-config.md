@@ -441,7 +441,9 @@ git commit -m "refactor: autostart réduit aux services, retrait du config d'exe
 
 ### Task 5: Binds
 
-**Prérequis :** lire le relevé de la Tâche 2 pour `window.move`, `window.resize` et `hl.submap`. Utiliser les replis pour toute construction non confirmée.
+**Prérequis :** lire `.superpowers/sdd/api-lua.md`, le relevé de la Tâche 2. `window.move({direction=})` et `window.resize({x=,y=})` y sont CONFIRMÉS tels quels ; la déclaration de submap et la sortie de mode ont dû être corrigées (voir Step 3).
+
+Référence faisant autorité pour tout doute sur l'API : `/usr/share/hypr/stubs/hl.meta.lua`, le stub LSP installé par le paquet Hyprland — il contient les signatures complètes de `hl.*` et `hl.dsp.*`.
 
 **Files:**
 - Modify: `hypr/.config/hypr/hyprland.lua` — section KEYBINDINGS
@@ -484,29 +486,30 @@ Si la Tâche 2 a marqué `window.move({direction=})` en ÉCHEC, utiliser le repl
 
 - [ ] **Step 3: Ajouter le redimensionnement**
 
-Si `hl.submap` est CONFIRMÉ :
+**Syntaxe corrigée par la Tâche 2 — le plan initial se trompait sur deux noms.**
+`hl.submap` et `hl.dsp.submap_reset` **n'existent pas** dans l'API Lua de 0.55.4 ;
+appeler `hl.submap` lève une erreur fatale qui interrompt tout le chunk Lua suivant.
+Le mode reste utilisable, avec les noms confirmés empiriquement :
 
 ```lua
 -- Redimensionnement en mode : évite de consommer quatre raccourcis globaux.
+-- hl.define_submap déclare, hl.dsp.submap entre, hl.dsp.submap("reset") sort.
 hl.bind(mainMod .. " + R", hl.dsp.submap("resize"))
-hl.submap("resize", function()
+hl.define_submap("resize", function()
     hl.bind("left",  hl.dsp.window.resize({ x = -40, y = 0 }))
     hl.bind("right", hl.dsp.window.resize({ x = 40,  y = 0 }))
     hl.bind("up",    hl.dsp.window.resize({ x = 0,   y = -40 }))
     hl.bind("down",  hl.dsp.window.resize({ x = 0,   y = 40 }))
-    hl.bind("escape", hl.dsp.submap_reset())
+    hl.bind("escape", hl.dsp.submap("reset"))
 end)
 ```
 
-Si `hl.submap` est en ÉCHEC, appliquer le repli — quatre binds globaux, pas de mode :
+Ces trois formes ont été prouvées à l'exécution, pas seulement à la lecture : le
+socket d'événements de Hyprland émet `submap>>resize` à l'entrée et `submap>>` à
+la sortie. Le relevé complet est dans `.superpowers/sdd/api-lua.md`.
 
-```lua
--- Repli : hl.submap n'est pas exposé par l'API Lua de cette version.
-hl.bind(mainMod .. " + ALT + left",  hl.dsp.window.resize({ x = -40, y = 0 }))
-hl.bind(mainMod .. " + ALT + right", hl.dsp.window.resize({ x = 40,  y = 0 }))
-hl.bind(mainMod .. " + ALT + up",    hl.dsp.window.resize({ x = 0,   y = -40 }))
-hl.bind(mainMod .. " + ALT + down",  hl.dsp.window.resize({ x = 0,   y = 40 }))
-```
+Le repli « quatre binds globaux `SUPER + ALT + flèches`, sans mode » n'est donc
+**plus nécessaire** — ne l'appliquer que si la syntaxe corrigée ci-dessus échoue.
 
 - [ ] **Step 4: Vérifier la syntaxe, déployer, recharger**
 
