@@ -13,7 +13,7 @@
 - **`palette.toml` est la seule source de vérité des couleurs.** Ne jamais éditer un fichier portant l'en-tête `GÉNÉRÉ PAR`.
 - **Stdlib Python uniquement** — pas de pytest, pas de dépendance nouvelle.
 - **Commentaires en français**, et ils justifient les choix. Aucun commentaire ne paraphrase le code.
-- **Aucun commentaire d'exemple anglais** ne subsiste dans `hyprland.lua` en fin de passe.
+- **Aucun commentaire d'exemple anglais** ne subsiste dans `hyprland.lua` en fin de passe — la contrainte porte sur la **prose**. Les bannières de section en capitales (`---- MONITORS ----`, `---- KEYBINDINGS ----`, …) restent **délibérément en anglais** : décision de l'auteur, ce sont des repères structurels qui facilitent la comparaison avec la documentation Hyprland. Ne pas les compter comme un manquement.
 - Le contrôle de contraste (`--check-contrast`) doit rester vert à chaque commit.
 - Hyprland **0.55.4** : toute clé de l'API Lua non confirmée par la Tâche 2 doit utiliser son repli documenté.
 - Le fichier de travail est `hypr/.config/hypr/hyprland.lua` (le paquet stow), **jamais** `~/.config/hypr/hyprland.lua` directement.
