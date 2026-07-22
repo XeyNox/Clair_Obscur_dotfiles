@@ -261,21 +261,20 @@ hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = tr
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
 
--- See https://wiki.hypr.land/Configuring/Basics/Window-Rules/
--- and https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
+-- Voir https://wiki.hypr.land/Configuring/Basics/Window-Rules/
+-- et https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
 
--- Example window rules that are useful
-
-local suppressMaximizeRule = hl.window_rule({
-    -- Ignore maximize requests from all apps. You'll probably like this.
+hl.window_rule({
     name  = "suppress-maximize-events",
     match = { class = ".*" },
 
     suppress_event = "maximize",
 })
 
+-- Corrige un bug réel de XWayland : pendant un drag-and-drop, XWayland fait
+-- apparaître une fenêtre transitoire sans classe ni titre ; lui retirer le
+-- focus évite qu'elle le vole à la fenêtre réellement déplacée.
 hl.window_rule({
-    -- Fix some dragging issues with XWayland
     name  = "fix-xwayland-drags",
     match = {
         class      = "^$",
@@ -289,11 +288,31 @@ hl.window_rule({
     no_focus = true,
 })
 
--- Hyprland-run windowrule
 hl.window_rule({
     name  = "move-hyprland-run",
     match = { class = "hyprland-run" },
 
     move  = "20 monitor_h-120",
     float = true,
+})
+
+-- Les sélecteurs de fichiers et boîtes de confirmation sont des dialogues :
+-- les tuiler de force leur donne une taille absurde.
+hl.window_rule({
+    name  = "float-dialogues",
+    match = { title = "^(Open File|Open Files|Save File|Save As|Choose Files|Select a File|Confirm|Confirmation)$" },
+    float = true,
+})
+
+hl.window_rule({
+    name  = "float-portails-xdg",
+    match = { class = "^(xdg-desktop-portal-gtk|xdg-desktop-portal-hyprland)$" },
+    float = true,
+})
+
+-- hypridle ne doit pas verrouiller pendant une vidéo ou un jeu.
+hl.window_rule({
+    name         = "inhibe-veille-plein-ecran",
+    match        = { fullscreen = true },
+    idle_inhibit = "fullscreen",
 })
