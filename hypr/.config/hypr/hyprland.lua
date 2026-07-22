@@ -96,8 +96,9 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
 hl.config({
     general = {
-        gaps_in  = 5,
-        gaps_out = 20,
+        -- Gaps généreux : le noir entre les fenêtres est le mur de la galerie.
+        gaps_in  = 8,
+        gaps_out = 24,
 
         border_size = 2,
 
@@ -106,35 +107,39 @@ hl.config({
             inactive_border = colors.border_inactive,
         },
 
-        -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,
-
-        -- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
-        allow_tearing = false,
+        allow_tearing    = false,
 
         layout = "dwindle",
     },
 
     decoration = {
-        rounding       = 10,
+        rounding       = 8,
         rounding_power = 2,
 
-        -- Change transparency of focused and unfocused windows
+        -- L'inactif est assombri, pas rendu translucide. Le clair-obscur est un
+        -- rapport ombre/lumière ; l'opacité laisserait transparaître le fond
+        -- d'écran et les fenêtres du dessous, ce qui nuit à la lecture.
         active_opacity   = 1.0,
         inactive_opacity = 1.0,
+        dim_inactive     = true,
+        dim_strength     = 0.12,
 
+        -- La couleur d'ombre est SOUS bg_primary : une ombre de la couleur du
+        -- fond ne creuse rien. L'alpha se compose ici, pas dans la palette.
         shadow = {
             enabled      = true,
-            range        = 4,
+            range        = 20,
             render_power = 3,
-            color        = 0xee1a1a1a,
+            color        = "rgba(" .. colors.raw.shadow .. "ee)",
         },
 
         blur = {
-            enabled   = true,
-            size      = 3,
-            passes    = 1,
-            vibrancy  = 0.1696,
+            enabled    = true,
+            size       = 6,
+            passes     = 2,
+            brightness = 0.8,      -- assombrit l'arrière-plan flouté
+            vibrancy   = 0.1696,
         },
     },
 
@@ -216,8 +221,7 @@ hl.config({
 
 hl.config({
     misc = {
-        force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        disable_hyprland_logo = true,   -- pas de mascotte dans une galerie
     },
 })
 
