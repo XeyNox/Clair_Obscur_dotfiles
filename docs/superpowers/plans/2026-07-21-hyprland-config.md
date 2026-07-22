@@ -689,10 +689,14 @@ Expected: aucune sortie.
 
 Ce contrôle n'a de sens qu'ici : les Tâches 4, 5 et 6 francisent chacune sa propre section, et seule leur somme couvre le fichier.
 
-Run: `grep -nE '^\s*--.*\b(the|your|you|this|for more|Example|See)\b' hypr/.config/hypr/hyprland.lua`
-Expected: aucune sortie. Chaque ligne retournée est un commentaire d'exemple oublié — la traiter avant de clore la passe.
+**Le critère est la relecture, pas le grep.** La Tâche 5 l'a prouvé : son motif par mots-clés déclarait la section propre alors que sept commentaires anglais y subsistaient — aucun ne contenait un mot de la liste. Un contrôle qu'on satisfait en laissant l'anglais en place ne vaut rien.
 
-Ce grep ne détecte que des mots anglais courants. Relire aussi le fichier de bout en bout : il attrapera « Example binds » mais pas « Requires playerctl ».
+Lire le fichier **de bout en bout** et traiter chaque commentaire anglais rencontré, selon le même critère que partout ailleurs : supprimer s'il paraphrase le code, traduire en justifiant s'il porte une information que le code ne dit pas.
+
+Le grep ne sert que de filet, après la relecture, jamais à sa place :
+
+Run: `grep -nE '^\s*--.*\b(the|your|you|this|for|and|with|only|maps|keys|Example|See|Requires)\b' hypr/.config/hypr/hyprland.lua`
+Expected: aucune sortie — mais une sortie vide ne prouve rien à elle seule.
 
 - [ ] **Step 5: Mettre à jour le graphe de connaissance**
 
