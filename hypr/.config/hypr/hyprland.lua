@@ -190,7 +190,7 @@ local mainMod = "SUPER"
 
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + W", hl.dsp.window.close())
-hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+hl.bind(mainMod .. " + SHIFT + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 -- Le menu est le raccourci le plus frappé de la session : deux touches, pas trois.
