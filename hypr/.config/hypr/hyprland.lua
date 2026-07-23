@@ -37,7 +37,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("hypridle")
     hl.exec_cmd("nm-applet")
-    hl.exec_cmd("blueman-applet")
+    -- Pas de blueman-applet : il relance blueman-tray, qui doublonne avec le
+    -- module bluetooth de waybar. Le module affiche l'état ; clic -> blueman-manager.
     hl.exec_cmd("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
 end)
 

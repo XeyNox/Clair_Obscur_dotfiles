@@ -38,9 +38,14 @@ window#waybar {
     padding: 0 14px;
 }
 
-#pulseaudio, #network, #battery, #tray {
+#pulseaudio, #network, #bluetooth, #battery, #tray {
     color: @text_primary;
     padding: 0 10px;
+}
+
+/* Bluetooth connecté : éclairé en or, comme l'espace de travail actif. */
+#bluetooth.connected {
+    color: @accent_gold;
 }
 
 #battery.warning {
