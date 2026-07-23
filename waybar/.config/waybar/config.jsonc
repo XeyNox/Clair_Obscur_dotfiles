@@ -6,7 +6,7 @@
 
 	"modules-left": ["hyprland/workspaces"],
 	"modules-center": ["clock"],
-	"modules-right": ["cpu", "pulseaudio", "network", "bluetooth", "battery", "tray"],
+	"modules-right": ["cpu", "temperature", "pulseaudio", "network", "bluetooth", "battery", "tray"],
 
 	"hyprland/workspaces": {
 		"format": "{icon}",
@@ -32,6 +32,17 @@
 	"cpu": {
 		"format": "󰻠 {usage}%",
 		"interval": 2
+	},
+
+	"temperature": {
+		// Capteur CPU AMD (k10temp / Tctl). Chemin absolu du device : stable au
+		// reboot, contrairement à hwmonN. Spécifique à cette machine.
+		"hwmon-path-abs": "/sys/devices/pci0000:00/0000:00:18.3/hwmon",
+		"input-filename": "temp1_input",
+		"critical-threshold": 85,
+		"interval": 2,
+		"format": "{icon} {temperatureC}°C",
+		"format-icons": ["󱃃", "󰔏", "󰸁"]
 	},
 
 	"pulseaudio": {

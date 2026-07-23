@@ -41,9 +41,15 @@ window#waybar {
     padding: 0 14px;
 }
 
-#cpu, #pulseaudio, #network, #bluetooth, #battery, #tray {
+#cpu, #temperature, #pulseaudio, #network, #bluetooth, #battery, #tray {
     color: @text_primary;
     padding: 0 10px;
+}
+
+/* CPU trop chaud : même bandeau rouge que la batterie critique. */
+#temperature.critical {
+    background-color: @accent_red;
+    color: @text_primary;
 }
 
 /* Bluetooth connecté : éclairé en or, comme l'espace de travail actif. */
