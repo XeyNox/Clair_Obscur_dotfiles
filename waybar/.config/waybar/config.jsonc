@@ -18,18 +18,21 @@
 	},
 
 	"pulseaudio": {
-		"format": "sound {volume}%",
-		"format-muted": "mute"
+		"format": "{icon} {volume}%",
+		"format-muted": "󰝟",
+		"format-icons": ["󰕿", "󰖀", "󰕾"]
 	},
 
 	"network": {
-		"format-wifi": " {essid}",
-		"format-ethernet": " Connected",
-		"format-disconnected": " Disconnected"
+		"format-wifi": "󰤨 {essid}",
+		"format-ethernet": "󰈀 {ifname}",
+		"format-disconnected": "󰤭"
 	},
 
 	"battery": {
-		"format": " Battery {capacity}%"
+		"format": "{icon} {capacity}%",
+		"format-charging": "󰂄 {capacity}%",
+		"format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
 	},
 
 	"tray": {
