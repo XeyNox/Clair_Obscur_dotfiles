@@ -13,7 +13,10 @@ window#waybar {
     color: @text_primary;
 }
 
+/* Chiffres romains en Cinzel : le titrage Belle Époque du reste du rice. */
 #workspaces button {
+    font-family: "Cinzel";
+    font-size: 14px;
     padding: 0 10px;
     color: @text_muted;
     background-color: transparent;
@@ -38,7 +41,7 @@ window#waybar {
     padding: 0 14px;
 }
 
-#pulseaudio, #network, #bluetooth, #battery, #tray {
+#cpu, #pulseaudio, #network, #bluetooth, #battery, #tray {
     color: @text_primary;
     padding: 0 10px;
 }
