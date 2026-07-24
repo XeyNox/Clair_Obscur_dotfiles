@@ -3,7 +3,7 @@
 [global]
     monitor = 0
     follow = mouse
-    width = 340
+    width = 360
     height = (0, 300)
     origin = top-right
     offset = (16, 16)
@@ -15,6 +15,7 @@
     progress_bar_frame_width = 1
     progress_bar_min_width = 150
     progress_bar_max_width = 300
+    highlight = "{{accent_gold}}"
 
     indicate_hidden = yes
     transparency = 8
@@ -29,10 +30,12 @@
     gap_size = 6
 
     sort = yes
-    font = Cormorant Garamond 12
+    font = Cormorant Garamond 13
     line_height = 0
     markup = full
-    format = "<b>%s</b>\n%b"
+    # Nom de l'app en petit (text_muted) au-dessus, titre en Cinzel, corps en
+    # Cormorant. Les rôles entre accolades doubles viennent de la palette.
+    format = "<span size='small' foreground='{{text_muted}}'>%a</span>\n<span font='Cinzel 13'><b>%s</b></span>\n%b"
     alignment = left
     vertical_alignment = center
     show_age_threshold = 60
