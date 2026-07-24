@@ -52,6 +52,16 @@ window#waybar {
     color: @text_primary;
 }
 
+/* Bouton d'alimentation, à l'extrême droite : éclairé en or au survol. */
+#custom-power {
+    color: @text_primary;
+    padding: 0 14px;
+}
+
+#custom-power:hover {
+    color: @accent_gold;
+}
+
 /* Bluetooth connecté : éclairé en or, comme l'espace de travail actif. */
 #bluetooth.connected {
     color: @accent_gold;

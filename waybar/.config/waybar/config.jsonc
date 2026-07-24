@@ -6,7 +6,7 @@
 
 	"modules-left": ["hyprland/workspaces"],
 	"modules-center": ["clock"],
-	"modules-right": ["cpu", "temperature", "pulseaudio", "network", "bluetooth", "battery", "tray"],
+	"modules-right": ["cpu", "temperature", "pulseaudio", "network", "bluetooth", "battery", "tray", "custom/power"],
 
 	"hyprland/workspaces": {
 		"format": "{icon}",
@@ -76,5 +76,11 @@
 
 	"tray": {
 		"spacing": 10
+	},
+
+	"custom/power": {
+		"format": "󰐥",
+		"tooltip": false,
+		"on-click": "~/.config/waybar/power-menu.sh"
 	},
 }
