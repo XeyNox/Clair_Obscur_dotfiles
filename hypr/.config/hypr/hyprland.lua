@@ -198,6 +198,7 @@ hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd(browser))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("~/.config/hypr/wallpaper-picker.sh"))
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- N'a d'effet qu'en layout dwindle (voir LOOK AND FEEL) ; togglesplit n'existe pas en layout master.
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy && notify-send 'Copied screenshot'"))
