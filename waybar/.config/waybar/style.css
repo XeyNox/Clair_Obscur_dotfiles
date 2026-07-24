@@ -41,7 +41,7 @@ window#waybar {
     padding: 0 14px;
 }
 
-#cpu, #temperature, #pulseaudio, #network, #bluetooth, #battery, #tray {
+#cpu, #memory, #temperature, #backlight, #pulseaudio, #network, #bluetooth, #battery, #tray {
     color: @text_primary;
     padding: 0 10px;
 }
