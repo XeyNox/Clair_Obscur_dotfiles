@@ -9,23 +9,43 @@ window {
     padding: 0;
 }
 
+mainbox {
+    children: [ inputbar, listview, mode-switcher ];
+    spacing: 0;
+}
+
 inputbar {
     background-color: @bg-secondary;
     text-color: @text-primary;
     padding: 14px 16px;
-    children: [ prompt, entry ];
+    spacing: 10px;
+    children: [ prompt, entry, num-filtered-rows, textbox-num-sep, num-rows ];
 }
 
 prompt {
     font: "Cormorant Garamond 15";
     text-color: @accent-gold;
-    margin: 0 10px 0 0;
+    margin: 0 6px 0 0;
 }
 
 entry {
     text-color: @text-primary;
-    placeholder: "";
+    placeholder: "Rechercher…";
     placeholder-color: @text-muted;
+}
+
+/* Compteur de résultats : filtrés / total, discret. */
+num-filtered-rows {
+    text-color: @text-muted;
+}
+
+textbox-num-sep {
+    text-color: @text-muted;
+    str: "/";
+}
+
+num-rows {
+    text-color: @text-muted;
 }
 
 listview {
@@ -38,14 +58,24 @@ listview {
 element {
     padding: 8px 12px;
     border-radius: 4px;
-    text-color: @text-muted;
     background-color: transparent;
 }
 
-/* Clarté/obscurité : l'entrée sélectionnée est éclairée. */
-element selected {
+/* Les couleurs se posent sur les états explicites : un `element {}` générique
+   ne surcharge pas les défauts de rofi, d'où des lignes claires sinon. */
+element normal normal,
+element alternate normal {
+    background-color: transparent;
+    text-color: @text-muted;
+}
+
+/* Clarté/obscurité : l'entrée sélectionnée est éclairée et marquée d'un trait
+   d'or à gauche — le même motif que l'espace actif dans la waybar. */
+element selected normal {
     background-color: @bg-elevated;
     text-color: @accent-gold;
+    border: 0px 0px 0px 3px;
+    border-color: @accent-gold;
 }
 
 element-text {
@@ -57,4 +87,23 @@ element-icon {
     size: 22px;
     margin: 0 10px 0 0;
     background-color: transparent;
+}
+
+/* Onglets de mode (Applications / Fenêtres), en bas ; l'actif éclairé en or. */
+mode-switcher {
+    background-color: @bg-secondary;
+    padding: 6px;
+    spacing: 6px;
+}
+
+button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-color: @text-muted;
+    background-color: transparent;
+}
+
+button selected {
+    text-color: @accent-gold;
+    background-color: @bg-elevated;
 }

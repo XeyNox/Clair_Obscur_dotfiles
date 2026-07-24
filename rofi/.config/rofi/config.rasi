@@ -1,7 +1,9 @@
 configuration {
     font: "JetBrainsMono Nerd Font 12";
     show-icons: true;
-    display-drun: "";
+    modi: "drun,window";
+    display-drun: "󰍉  Applications";
+    display-window: "󰖯  Fenêtres";
     drun-display-format: "{name}";
 }
 
